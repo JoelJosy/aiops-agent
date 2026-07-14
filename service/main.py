@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from service.routes import router
+from routes import router
 
 app = FastAPI(
     title="AIOps Agent Service",
