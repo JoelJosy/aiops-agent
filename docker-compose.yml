@@ -14,6 +14,7 @@ services:
       
   prometheus:
     image: prom/prometheus:latest
+    user: "root"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
@@ -32,6 +33,17 @@ services:
       - grafana-storage:/var/lib/grafana
     depends_on:
       - prometheus
+    
+  locust:
+    image: locustio/locust:latest
+    ports:
+      - "8089:8089"
+    command: >
+      -f /mnt/chaos/locustfile.py --host http://aiops-app:8000
+    volumes:
+      - ./chaos:/mnt/chaos
+    depends_on:
+      - aiops-app
 
 volumes:
   # persist storage on disk
