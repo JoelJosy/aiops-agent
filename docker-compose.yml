@@ -21,3 +21,17 @@ services:
     depends_on:
       - aiops-app
 
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_pw123
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  # persist storage on disk for grafana
+  grafana-storage:
