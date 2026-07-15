@@ -1,3 +1,4 @@
+import gc
 import threading
 
 # ===============================
@@ -91,3 +92,27 @@ def stop_cpu_burn():
     with cpu_lock:
         cpu_stop_event.set()
         cpu_threads = []
+
+# ===============================
+# Memory Leak State Management
+# ===============================
+# Module-level list to hold references to bytearrays so GC cannot reclaim them
+memory_leak_reservoir: list[bytearray] = []
+
+def allocate_memory_leak(mb_to_allocate: int) -> int:
+    """Appends bytearrays to simulate a leak, bounded at 100MB per call."""
+    global memory_leak_reservoir
+    mb_to_allocate = max(0, min(100, mb_to_allocate))
+    
+    # 1 MB = 1,048,576 bytes
+    chunk = bytearray(mb_to_allocate * 1024 * 1024)
+    memory_leak_reservoir.append(chunk)
+    
+    # Return total allocated MB currently held in the leak reservoir
+    return sum(len(c) for c in memory_leak_reservoir) // (1024 * 1024)
+
+def clear_memory_leak():
+    """Clears the reservoir and runs garbage collection."""
+    global memory_leak_reservoir
+    memory_leak_reservoir.clear()
+    gc.collect()  # Explicitly tell Python to free memory to the OS

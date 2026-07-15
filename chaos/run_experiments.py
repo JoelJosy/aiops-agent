@@ -1,6 +1,8 @@
 import argparse
 import time
 from app_outage_experiment import run_outage_experiment
+from cpu_spike import run_cpu_spike_experiment
+from memory_leak_experiment import run_memory_leak_experiment
 from downstream_latency_experiment import run_downstream_latency_experiment
 from redis_latency_experiment import run_latency_experiment
 from redis_outage_experiment import run_redis_outage_experiment
@@ -49,6 +51,18 @@ if __name__ == "__main__":
         default=1.0,
         help="Rate of downstream errors (from 0.0 to 1.0)"
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="CPU worker threads to spawn"
+    )
+    parser.add_argument(
+        "--megabytes",
+        type=int,
+        default=50,
+        help="Size of memory leak allocation in MB"
+    )
     
     args = parser.parse_args()
     
@@ -68,5 +82,9 @@ if __name__ == "__main__":
         run_downstream_latency_experiment(args.duration_seconds, args.delay_ms)
     elif args.fault == "downstream_failure":
         run_downstream_failure_experiment(args.duration_seconds, args.failure_rate)
+    elif args.fault == "cpu_spike":
+        run_cpu_spike_experiment(args.duration_seconds, args.workers)
+    elif args.fault == "memory_leak":
+        run_memory_leak_experiment(args.duration_seconds, args.megabytes)
         
     print(f"=========================================")
