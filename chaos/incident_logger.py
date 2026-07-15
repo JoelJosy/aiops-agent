@@ -44,17 +44,3 @@ def log_incident(fault_type: str,
         file.write(json.dumps(incident_record) + "\n")
 
     return incident_record
-
-start_time = datetime.now(timezone.utc)
-# Simulate a 45-second duration
-end_time = start_time + timedelta(seconds=45)
-log_incident(
-    fault_type="cpu_spike_test",
-    target="aiops-app",
-    start=start_time,
-    end=end_time,
-    params={
-        "cpu_cores": 2,
-        "load_percentage": 90
-    }
-)
