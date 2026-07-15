@@ -8,6 +8,7 @@ APP_URL = "http://localhost:8000"
 CHAOS_URL = f"{APP_URL}/chaos/redis-delay"
 DOWNSTREAM_CHAOS_URL = f"{APP_URL}/chaos/downstream-delay"
 DOWNSTREAM_FAILURE_URL = f"{APP_URL}/chaos/downstream-failure"
+CPU_BURN_URL = f"{APP_URL}/chaos/cpu-burn"
 HEALTH_URL = f"{APP_URL}/health"
 
 

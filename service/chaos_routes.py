@@ -17,6 +17,9 @@ class DelayRequest(BaseModel):
 class DownstreamFailureRequest(BaseModel):
     failure_rate: float = Field(..., ge=0.0, le=1.0)
 
+class CPUBurnRequest(BaseModel):
+    workers: int = Field(1, ge=1, le=2)
+
 # Redis Delay Endpoints
 @router.post("/redis-delay", status_code=status.HTTP_200_OK)
 def set_delay(request: DelayRequest):
@@ -53,3 +56,14 @@ async def set_downstream_failure(payload: DownstreamFailureRequest):
 async def delete_downstream_failure():
     chaos_state.reset_downstream_failure()
     return {"downstream_failure_rate": chaos_state.get_downstream_failure_rate()}
+
+# CPU Spike Endpoints
+@router.post("/cpu-burn", status_code=status.HTTP_200_OK)
+async def set_cpu_burn(payload: CPUBurnRequest):
+    active_workers = chaos_state.start_cpu_burn(payload.workers)
+    return {"cpu_burn_active": True, "workers": active_workers}
+
+@router.delete("/cpu-burn", status_code=status.HTTP_200_OK)
+async def delete_cpu_burn():
+    chaos_state.stop_cpu_burn()
+    return {"cpu_burn_active": False, "workers": 0}
