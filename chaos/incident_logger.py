@@ -7,8 +7,8 @@ from pathlib import Path
 LOG_FILE_PATH = Path(__file__).parent / "incidents.log"
 
 
-# convert datetime to ISO 8601 format with UTC timezone
 def format_timestamp(dt: Union[datetime, str]) -> str:
+    """Convert datetime to ISO 8601 format with UTC timezone"""
     if isinstance(dt, datetime):
         # If  no timezone info, assume it's UTC and attach UTC timezone
         if dt.tzinfo is None:
@@ -29,7 +29,7 @@ def log_incident(fault_type: str,
     end: Union[datetime, str],
     params: Dict[str, Any]
 ) -> Dict[str, Any]:
-
+    """Log an incident to a file in JSON format"""
     incident_record = {
         "incident_id": str(uuid.uuid4()),
         "fault_type": fault_type,
