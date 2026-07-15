@@ -5,6 +5,7 @@ import redis
 from redis.exceptions import RedisError
 from pydantic import BaseModel
 from fastapi import APIRouter, status, HTTPException
+from metrics import REDIS_LATENCY, CACHE_COUNT
 
 class Item(BaseModel):
     name: str
@@ -29,8 +30,11 @@ def create_item(item: Item):
     items[item_id] = item
     # store item in Redis 
     try:
-        r.set(f"item:{item_id}", item.model_dump_json())
+        # Start timing Redis SET
+        with REDIS_LATENCY.labels(operation="set").time():
+            r.set(f"item:{item_id}", item.model_dump_json())
     except RedisError as e:
+        CACHE_COUNT.labels(outcome="error").inc()
         print(f"Redis unavailable: {e}")
     
     # unpack model and return json response
@@ -41,11 +45,19 @@ def create_item(item: Item):
 def get_item(item_id: str):
     # Try Redis cache
     try:
-        cached = r.get(f"item:{item_id}")
+        # Start timing Redis GET
+        with REDIS_LATENCY.labels(operation="get").time():
+            cached = r.get(f"item:{item_id}")
         if cached is not None:
+            # Increment cache hit counter
+            CACHE_COUNT.labels(outcome="hit").inc()
             item = Item.model_validate_json(cached)
             return {"id": item_id, **item.model_dump()}
+        else:
+            # Increment cache miss counter
+            CACHE_COUNT.labels(outcome="miss").inc()
     except RedisError as e:
+        CACHE_COUNT.labels(outcome="error").inc()
         print(f"Redis error on get: {e}")
     
     # Cache miss or Redis unavailable: hit the fake DB
@@ -59,8 +71,11 @@ def get_item(item_id: str):
     
     # Cache the item for next time
     try:
-        r.set(f"item:{item_id}", item.model_dump_json())
+        # Start timing Redis SET
+        with REDIS_LATENCY.labels(operation="set").time():
+            r.set(f"item:{item_id}", item.model_dump_json())
     except RedisError as e:
+        CACHE_COUNT.labels(outcome="error").inc()
         print(f"Redis error on set: {e}")
     
     return {"id": item_id, **item.model_dump()}
