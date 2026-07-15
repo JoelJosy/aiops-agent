@@ -16,6 +16,7 @@ services:
     image: prom/prometheus:latest
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
     ports:
       - "9090:9090"
     depends_on:
@@ -33,5 +34,6 @@ services:
       - prometheus
 
 volumes:
-  # persist storage on disk for grafana
+  # persist storage on disk
   grafana-storage:
+  prometheus-data:
