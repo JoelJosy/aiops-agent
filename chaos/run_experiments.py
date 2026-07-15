@@ -33,6 +33,34 @@ def poll_health(timeout_seconds: int = 60) -> bool:
         
     raise TimeoutError(f"App did not become healthy within {timeout_seconds} seconds.")
 
+def poll_redis(timeout_seconds: int = 60) -> bool:
+    """
+    Repeatedly executes 'redis-cli ping' inside the Redis container
+    until it successfully returns 'PONG'.
+    """
+    print("Polling Redis container with 'redis-cli ping' until it returns PONG...")
+    start_poll = time.time()
+    
+    while time.time() - start_poll < timeout_seconds:
+        try:
+            # -T disables pseudo-TTY allocation, essential for non-interactive scripts
+            result = subprocess.run(
+                ["docker", "compose", "exec", "-T", "redis", "redis-cli", "ping"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            # Check if the output contains the standard Redis "PONG" response
+            if "PONG" in result.stdout:
+                print("   Redis is healthy and responding to commands!")
+                return True
+        except (subprocess.SubprocessError, subprocess.TimeoutExpired):
+            # Safe to ignore; Redis is still booting up
+            pass
+        
+        time.sleep(1)
+        
+    raise TimeoutError(f"Redis did not become healthy within {timeout_seconds} seconds.")
 
 def run_latency_experiment(duration_seconds: int, delay_ms: int):
     """Executes a simulated Redis latency injection."""
@@ -102,6 +130,35 @@ def run_outage_experiment(duration_seconds: int):
         params={}
     )
 
+def run_redis_outage_experiment(duration_seconds: int):
+    """Executes a physical Redis container outage via Docker Compose."""
+    start_time = None
+    end_time = None
+    try:
+        print(f"\nStopping redis container...")
+        subprocess.run(["docker", "compose", "stop", "redis"], check=True)
+        start_time = datetime.now(timezone.utc)
+        print(f"   Redis outage started at: {start_time.strftime('%H:%M:%SZ')}")
+        print(f"   Monitoring outage period for {duration_seconds} seconds...")
+        time.sleep(duration_seconds)
+    finally:
+        # try/finally guarantees Redis will be restarted even if the test run crashes
+        print(f"\nRestarting redis container...")
+        subprocess.run(["docker", "compose", "start", "redis"], check=True)
+
+        # Wait for the Redis container to actually respond to commands
+        poll_redis()
+
+        end_time = datetime.now(timezone.utc)
+        print(f"   Redis recovery complete at: {end_time.strftime('%H:%M:%SZ')}")
+
+    log_incident(
+        fault_type="redis_outage",
+        target="redis",
+        start=start_time,
+        end=end_time,
+        params={}
+    )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AIOps Chaos Experiment Runner")
@@ -109,7 +166,7 @@ if __name__ == "__main__":
         "--fault",
         type=str,
         required=True,
-        choices=["redis_latency", "app_outage"],
+        choices=["redis_latency", "app_outage", "redis_outage"],
         help="The type of fault to inject into the system"
     )
     parser.add_argument(
@@ -149,5 +206,7 @@ if __name__ == "__main__":
         run_latency_experiment(args.duration_seconds, args.delay_ms)
     elif args.fault == "app_outage":
         run_outage_experiment(args.duration_seconds)
+    elif args.fault == "redis_outage":
+        run_redis_outage_experiment(args.duration_seconds)
         
     print(f"=========================================")
