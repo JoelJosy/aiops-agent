@@ -25,3 +25,16 @@ CACHE_COUNT = Counter(
     "Cache hit, miss, and error counts",
     ["outcome"],
 )
+
+
+DOWNSTREAM_CALL_DURATION = Histogram(
+    "downstream_call_duration_seconds",
+    "Latency of downstream dependency calls in seconds",
+    ["dependency"]
+)
+
+DOWNSTREAM_CALLS = Counter(
+    "downstream_calls_total",
+    "Total number of downstream dependency calls",
+    ["dependency", "outcome"]
+)

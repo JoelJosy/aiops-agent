@@ -6,7 +6,7 @@ import asyncio
 from redis.exceptions import RedisError
 from pydantic import BaseModel
 from fastapi import APIRouter, status, HTTPException
-from metrics import REDIS_LATENCY, CACHE_COUNT
+from metrics import REDIS_LATENCY, CACHE_COUNT, DOWNSTREAM_CALL_DURATION, DOWNSTREAM_CALLS
 import chaos_state  
 
 class Item(BaseModel):
@@ -67,6 +67,9 @@ async def get_item(item_id: str):
             # Increment cache hit counter
             CACHE_COUNT.labels(outcome="hit").inc()
             item = Item.model_validate_json(cached)
+
+            # run downstream
+            await call_catalog_service()  
             return {"id": item_id, **item.model_dump()}
         else:
             # Increment cache miss counter
@@ -98,5 +101,30 @@ async def get_item(item_id: str):
     except RedisError as e:
         CACHE_COUNT.labels(outcome="error").inc()
         print(f"Redis error on set: {e}")
-    
+
+    # Simulated downstream dependency call
+    await call_catalog_service()  
+
     return {"id": item_id, **item.model_dump()}
+
+# Simulated Downstream Dependency Call
+async def call_catalog_service():
+    """
+    Simulates an external call to a simulated downstream dependency.
+    Wraps the entire execution in the downstream metrics.
+    """
+    dependency_name = "catalog-service"
+
+    # Start the timer specifically for the downstream call
+    with DOWNSTREAM_CALL_DURATION.labels(dependency=dependency_name).time():
+        # 1. Base latency (5ms) + injected chaos delay
+        base_delay_s = 0.005 
+        chaos_delay_s = chaos_state.get_downstream_delay_ms() / 1000.0
+        total_delay = base_delay_s + chaos_delay_s
+
+        try:
+            await asyncio.sleep(total_delay)
+            DOWNSTREAM_CALLS.labels(dependency=dependency_name, outcome="success").inc()
+        except Exception:
+            DOWNSTREAM_CALLS.labels(dependency=dependency_name, outcome="error").inc()
+            raise

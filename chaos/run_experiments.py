@@ -8,6 +8,7 @@ from incident_logger import log_incident
 # Configuration
 APP_URL = "http://localhost:8000"
 CHAOS_URL = f"{APP_URL}/chaos/redis-delay"
+DOWNSTREAM_CHAOS_URL = f"{APP_URL}/chaos/downstream-delay"
 HEALTH_URL = f"{APP_URL}/health"
 
 
@@ -62,6 +63,7 @@ def poll_redis(timeout_seconds: int = 60) -> bool:
         
     raise TimeoutError(f"Redis did not become healthy within {timeout_seconds} seconds.")
 
+
 def run_latency_experiment(duration_seconds: int, delay_ms: int):
     """Executes a simulated Redis latency injection."""
     start_time = None
@@ -93,7 +95,6 @@ def run_latency_experiment(duration_seconds: int, delay_ms: int):
         end=end_time,
         params={"delay_ms": delay_ms}
     )
-
 
 def run_outage_experiment(duration_seconds: int):
     """Executes a real app container outage via Docker Compose."""
@@ -160,13 +161,46 @@ def run_redis_outage_experiment(duration_seconds: int):
         params={}
     )
 
+def run_downstream_latency_experiment(duration_seconds: int, delay_ms: int):
+    """Executes a simulated downstream catalog-service latency injection."""
+    start_time = None
+    end_time = None
+    try:
+        print(f"\nInjecting Downstream Dependency Latency...")
+        print(f"   POST {DOWNSTREAM_CHAOS_URL} with delay_ms={delay_ms}")
+        response = requests.post(DOWNSTREAM_CHAOS_URL, json={"delay_ms": delay_ms})
+        response.raise_for_status()
+
+        start_time = datetime.now(timezone.utc)
+        print(f"   Fault injected at: {start_time.strftime('%H:%M:%SZ')}")
+        print(f"   Monitoring fault period for {duration_seconds} seconds...")
+        time.sleep(duration_seconds)
+    finally:
+        print(f"\nHealing System (Resetting downstream delay to 0)...")
+        response = requests.delete(DOWNSTREAM_CHAOS_URL)
+        response.raise_for_status()
+        end_time = datetime.now(timezone.utc)
+        print(f"   System healed at: {end_time.strftime('%H:%M:%SZ')}")
+
+    log_incident(
+        fault_type="downstream_latency",
+        target="aiops-app",
+        start=start_time,
+        end=end_time,
+        params={
+            "dependency": "catalog-service",
+            "delay_ms": delay_ms
+        }
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="AIOps Chaos Experiment Runner")
     parser.add_argument(
         "--fault",
         type=str,
         required=True,
-        choices=["redis_latency", "app_outage", "redis_outage"],
+        choices=["redis_latency", "app_outage", "redis_outage", "downstream_latency"],
         help="The type of fault to inject into the system"
     )
     parser.add_argument(
@@ -208,5 +242,7 @@ if __name__ == "__main__":
         run_outage_experiment(args.duration_seconds)
     elif args.fault == "redis_outage":
         run_redis_outage_experiment(args.duration_seconds)
+    elif args.fault == "downstream_latency":
+        run_downstream_latency_experiment(args.duration_seconds, args.delay_ms)
         
     print(f"=========================================")
