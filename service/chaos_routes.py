@@ -14,6 +14,9 @@ class DelayRequest(BaseModel):
         description="The simulated latency to add to Redis calls in milliseconds"
     )
 
+class DownstreamFailureRequest(BaseModel):
+    failure_rate: float = Field(..., ge=0.0, le=1.0)
+
 # Redis Delay Endpoints
 @router.post("/redis-delay", status_code=status.HTTP_200_OK)
 def set_delay(request: DelayRequest):
@@ -39,3 +42,14 @@ async def delete_downstream_delay():
     """Resets simulated downstream delay back to 0ms."""
     chaos_state.reset_downstream_delay()
     return {"downstream_delay_ms": chaos_state.get_downstream_delay_ms()}
+
+# Downstream Failure Endpoints
+@router.post("/downstream-failure", status_code=status.HTTP_200_OK)
+async def set_downstream_failure(payload: DownstreamFailureRequest):
+    chaos_state.set_downstream_failure_rate(payload.failure_rate)
+    return {"downstream_failure_rate": chaos_state.get_downstream_failure_rate()}
+
+@router.delete("/downstream-failure", status_code=status.HTTP_200_OK)
+async def delete_downstream_failure():
+    chaos_state.reset_downstream_failure()
+    return {"downstream_failure_rate": chaos_state.get_downstream_failure_rate()}

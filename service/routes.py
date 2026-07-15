@@ -1,3 +1,4 @@
+from random import random
 import time
 import uuid
 import os
@@ -114,6 +115,14 @@ async def call_catalog_service():
     Wraps the entire execution in the downstream metrics.
     """
     dependency_name = "catalog-service"
+
+    failure_rate = chaos_state.get_downstream_failure_rate()
+    if failure_rate > 0.0 and random() < failure_rate:
+        DOWNSTREAM_CALLS.labels(dependency=dependency_name, outcome="error").inc()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
+            detail="catalog service unavailable"
+        )
 
     # Start the timer specifically for the downstream call
     with DOWNSTREAM_CALL_DURATION.labels(dependency=dependency_name).time():
