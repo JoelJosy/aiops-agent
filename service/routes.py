@@ -2,10 +2,12 @@ import time
 import uuid
 import os
 import redis
+import asyncio
 from redis.exceptions import RedisError
 from pydantic import BaseModel
 from fastapi import APIRouter, status, HTTPException
 from metrics import REDIS_LATENCY, CACHE_COUNT
+import chaos_state  
 
 class Item(BaseModel):
     name: str
@@ -25,13 +27,18 @@ r = redis.from_url(redis_url, decode_responses=True)
 
 # CREATE item
 @router.post("/items", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
-def create_item(item: Item):
+async def create_item(item: Item):
     item_id = str(uuid.uuid4())
     items[item_id] = item
     # store item in Redis 
     try:
-        # Start timing Redis SET
+        # Start prometheus Redis SET timer
         with REDIS_LATENCY.labels(operation="set").time():
+            # if simulated chaos is enabled, inject delay
+            delay = chaos_state.get_redis_delay_ms()
+            if delay > 0:
+                # Convert ms to seconds
+                await asyncio.sleep(delay / 1000.0)
             r.set(f"item:{item_id}", item.model_dump_json())
     except RedisError as e:
         CACHE_COUNT.labels(outcome="error").inc()
@@ -42,11 +49,19 @@ def create_item(item: Item):
 
 # GET item by ID
 @router.get("/items/{item_id}", response_model=ItemResponse)
-def get_item(item_id: str):
+async def get_item(item_id: str):
     # Try Redis cache
     try:
-        # Start timing Redis GET
+        # Start prometheus Redis GET timer
         with REDIS_LATENCY.labels(operation="get").time():
+
+            # if simulated chaos is enabled, inject delay
+            delay = chaos_state.get_redis_delay_ms()
+            if delay > 0:
+                # Convert ms to seconds
+                await asyncio.sleep(delay / 1000.0) 
+
+            # execute Redis GET command
             cached = r.get(f"item:{item_id}")
         if cached is not None:
             # Increment cache hit counter
@@ -71,8 +86,14 @@ def get_item(item_id: str):
     
     # Cache the item for next time
     try:
-        # Start timing Redis SET
+        # Start prometheus Redis SET timer
         with REDIS_LATENCY.labels(operation="set").time():
+            # if simulated chaos is enabled, inject delay
+            delay = chaos_state.get_redis_delay_ms()
+            if delay > 0:
+                # Convert ms to seconds
+                await asyncio.sleep(delay / 1000.0)
+
             r.set(f"item:{item_id}", item.model_dump_json())
     except RedisError as e:
         CACHE_COUNT.labels(outcome="error").inc()

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Response
 from prometheus_client import make_asgi_app
 import time
 from routes import router
+from chaos_routes import router as chaos_router
 from metrics import REQUEST_COUNT, REQUEST_LATENCY
 
 app = FastAPI(
@@ -50,6 +51,7 @@ async def metrics_middleware(request: Request, call_next):
         REQUEST_COUNT.labels(method=method, endpoint=endpoint, http_status=status_code).inc()
 
 app.include_router(router)
+app.include_router(chaos_router)
 
 @app.get("/health")
 def health_check():

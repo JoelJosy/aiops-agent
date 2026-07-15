@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
-from service import chaos_state
+import chaos_state
 
 
 router = APIRouter(prefix="/chaos", tags=["chaos injection"])
