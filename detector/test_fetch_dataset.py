@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from dataset import fetch_feature_table
+from prometheus_api import fetch_feature_table
 
 end_time = datetime.now(timezone.utc)
 start_time = end_time - timedelta(minutes=10)
