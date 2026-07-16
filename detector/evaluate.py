@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import numpy as np
 from mad_detector import MADDetector
+from forecast_detector import ForecastResidualDetector 
 
 BASELINE_PATH = "data/baseline.parquet"
 TRAIN_INCIDENTS_DIR = "data/incidents/train"
@@ -37,7 +38,7 @@ def get_ground_truth_start(incident_filename):
 def evaluate_incident(detector, baseline_df, file_path):
     incident_df = pd.read_parquet(file_path)
     incident_df.index = pd.to_datetime(incident_df.index, utc=True)
-    
+    """Evaluates a single incident file against the provided detector and baseline, returning the first triggered metric and detection delay in seconds."""
     # Clean and isolate the simulation window
     # We assign a matching single session ID so the rolling calculations roll naturally
     sim_baseline = baseline_df.copy()
@@ -96,22 +97,27 @@ def main():
     baseline_df = pd.read_parquet(BASELINE_PATH)
     baseline_df.index = pd.to_datetime(baseline_df.index, utc=True)
     
-    detector = MADDetector(persistence_steps=3)
+    # Instantiate both detectors to compare side-by-side
+    mad_detector = MADDetector(persistence_steps=3)
+    forecast_detector = ForecastResidualDetector(persistence_steps=3)
     
     # Evaluate False Positive Rate on Pure Baseline 
     print("Part 1: Evaluating False Alarm Rate on Clean Baseline...")
     baseline_clean = baseline_df.resample("30s").max().ffill().bfill()
-    baseline_results = detector.fit_predict(baseline_clean)
     
-    total_baseline_rows = len(baseline_results)
-    false_positives = 0
-    for col in baseline_results.columns:
-        if "anomaly" in col:
-            false_positives += baseline_results[col].sum()
-            
-    fp_rate = (false_positives / total_baseline_rows) * 100
-    print(f"   Clean Steps Evaluated: {total_baseline_rows}")
-    print(f"   False Alarms Triggered: {false_positives} ({fp_rate:.2f}% False Positive Rate)")
+    # 1a. Run Baseline for MAD
+    baseline_results_mad = mad_detector.fit_predict(baseline_clean)
+    false_positives_mad = sum(baseline_results_mad[col].sum() for col in baseline_results_mad.columns if "anomaly" in col)
+    fp_rate_mad = (false_positives_mad / len(baseline_results_mad)) * 100
+    
+    # 1b. Run Baseline for Forecasting Residuals
+    baseline_results_fc = forecast_detector.fit_predict(baseline_clean)
+    false_positives_fc = sum(baseline_results_fc[col].sum() for col in baseline_results_fc.columns if "anomaly" in col)
+    fp_rate_fc = (false_positives_fc / len(baseline_results_fc)) * 100
+    
+    print(f"   Clean Steps Evaluated: {len(baseline_clean)}")
+    print(f"   MAD False Alarms Triggered: {false_positives_mad} ({fp_rate_mad:.2f}% FPR)")
+    print(f"   Forecast False Alarms Triggered: {false_positives_fc} ({fp_rate_fc:.2f}% FPR)")
     print("-" * 75)
     
     # Loop and Benchmark Train Incidents
@@ -121,13 +127,21 @@ def main():
     results_matrix = []
     for f_path in incident_files:
         name = os.path.basename(f_path)
-        metric, delay = evaluate_incident(detector, baseline_df, f_path)
         
-        delay_str = f"{int(delay)}s" if delay is not None else "N/A"
+        # Evaluate using the Robust MAD detector
+        mad_metric, mad_delay = evaluate_incident(mad_detector, baseline_df, f_path)
+        mad_delay_str = f"{int(mad_delay)}s" if mad_delay is not None else "N/A"
+        
+        # Evaluate using the Adaptive Forecast detector
+        fc_metric, fc_delay = evaluate_incident(forecast_detector, baseline_df, f_path)
+        fc_delay_str = f"{int(fc_delay)}s" if fc_delay is not None else "N/A"
+        
         results_matrix.append({
-            "File Name": name[:35],
-            "Primary Trigger Metric": metric,
-            "Detection Delay": delay_str
+            "File Name": name[:30],
+            "MAD Metric": mad_metric[:20],
+            "MAD Delay": mad_delay_str,
+            "Forecast Metric": fc_metric[:20],
+            "Forecast Delay": fc_delay_str
         })
         
     df_matrix = pd.DataFrame(results_matrix)
