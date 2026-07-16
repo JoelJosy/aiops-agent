@@ -1,4 +1,3 @@
-# detector/test_api.py
 from datetime import datetime, timezone, timedelta
 from prometheus_api import fetch_metric
 
