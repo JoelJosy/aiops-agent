@@ -4,21 +4,26 @@ from datetime import datetime, timezone
 from scripts.experiment_utils import MEMORY_LEAK_URL
 from incident_logger import log_incident
 
-def run_memory_leak_experiment(duration_seconds: int, megabytes: int):
-    """Trigger Memory Leak"""
+def run_memory_leak_experiment(duration_seconds: int, megabytes: int, steps: int = 5):
+    """Trigger a stepped, continuous Memory Leak"""
     start_time, end_time = None, None
-    try:
-        print(f"\nAllocating simulated memory leak of {megabytes} MB...")
-        requests.post(MEMORY_LEAK_URL, json={"megabytes": megabytes}).raise_for_status()
+    mb_per_step = megabytes // steps
+    time_per_step = duration_seconds / steps
 
+    try:
+        print(f"\nStarting stepped memory leak: total {megabytes} MB across {steps} steps...")
         start_time = datetime.now(timezone.utc)
-        print(f"   Fault injected at: {start_time.strftime('%H:%M:%SZ')}")
-        print(f"   Monitoring fault period for {duration_seconds} seconds...")
-        time.sleep(duration_seconds)
+        print(f"   Fault started at: {start_time.strftime('%H:%M:%SZ')}")
+
+        for step in range(steps):
+            print(f"   [Step {step+1}/{steps}] Injecting additional {mb_per_step} MB...")
+            requests.post(MEMORY_LEAK_URL, json={"megabytes": mb_per_step}).raise_for_status()
+            
+            # Wait out the slice for this step
+            time.sleep(time_per_step)
+
     finally:
-        # Keep in mind: Python may hold memory after deletion, 
-        # but we call DELETE anyway to clear the internal Python array.
-        print(f"\nHealing System (Resetting memory leak)...")
+        print(f"\n   Healing System (Resetting memory leak)...")
         requests.delete(MEMORY_LEAK_URL).raise_for_status()
         end_time = datetime.now(timezone.utc)
         print(f"   System healed at: {end_time.strftime('%H:%M:%SZ')}")
