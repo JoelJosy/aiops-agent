@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from incident_logger import log_incident
 
-from experiment_utils import poll_redis
+from scripts.experiment_utils import poll_redis
 
 
 def run_redis_outage_experiment(duration_seconds: int):

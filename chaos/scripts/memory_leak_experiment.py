@@ -1,7 +1,7 @@
 import time
 import requests
 from datetime import datetime, timezone
-from experiment_utils import MEMORY_LEAK_URL
+from scripts.experiment_utils import MEMORY_LEAK_URL
 from incident_logger import log_incident
 
 def run_memory_leak_experiment(duration_seconds: int, megabytes: int):

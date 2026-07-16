@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timezone
 
 from incident_logger import log_incident
-from experiment_utils import DOWNSTREAM_FAILURE_URL
+from scripts.experiment_utils import DOWNSTREAM_FAILURE_URL
 
 
 def run_downstream_failure_experiment(duration_seconds: int, failure_rate: float):

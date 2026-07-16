@@ -1,12 +1,12 @@
 import argparse
 import time
-from app_outage_experiment import run_outage_experiment
-from cpu_spike import run_cpu_spike_experiment
-from memory_leak_experiment import run_memory_leak_experiment
-from downstream_latency_experiment import run_downstream_latency_experiment
-from redis_latency_experiment import run_latency_experiment
-from redis_outage_experiment import run_redis_outage_experiment
-from downstream_failure_experiment import run_downstream_failure_experiment
+from scripts.app_outage_experiment import run_outage_experiment
+from scripts.cpu_spike import run_cpu_spike_experiment
+from scripts.memory_leak_experiment import run_memory_leak_experiment
+from scripts.downstream_latency_experiment import run_downstream_latency_experiment
+from scripts.redis_latency_experiment import run_latency_experiment
+from scripts.redis_outage_experiment import run_redis_outage_experiment
+from scripts.downstream_failure_experiment import run_downstream_failure_experiment
 
 
 if __name__ == "__main__":

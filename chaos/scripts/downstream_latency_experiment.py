@@ -5,7 +5,7 @@ import requests
 
 from incident_logger import log_incident
 
-from experiment_utils import DOWNSTREAM_CHAOS_URL
+from scripts.experiment_utils import DOWNSTREAM_CHAOS_URL
 
 
 def run_downstream_latency_experiment(duration_seconds: int, delay_ms: int):
