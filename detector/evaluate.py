@@ -9,7 +9,28 @@ from forecast_detector import ForecastResidualDetector
 
 BASELINE_PATH = "data/baseline.parquet"
 TRAIN_INCIDENTS_DIR = "data/incidents/train"
+TEST_INCIDENTS_DIR = "data/incidents/test"
 INCIDENTS_LOG = "chaos/incidents.log"
+
+
+def summarize_false_alarm_rates(results_df: pd.DataFrame):
+    """Returns both point-wise and timeline false-alarm rates."""
+    anomaly_cols = [c for c in results_df.columns if c.endswith("_anomaly")]
+    if not anomaly_cols or len(results_df) == 0:
+        return 0, 0.0, 0.0
+
+    anomaly_matrix = results_df[anomaly_cols].fillna(0).astype(int)
+    false_positives = int(anomaly_matrix.to_numpy().sum())
+
+    # Point-wise rate: each (timestamp, metric) pair is a possible false alarm.
+    total_points = len(anomaly_matrix) * len(anomaly_cols)
+    pointwise_rate = (false_positives / total_points) * 100 if total_points else 0.0
+
+    # Timeline rate: any false alarm at a timestamp counts once.
+    timeline_flags = int((anomaly_matrix.sum(axis=1) > 0).sum())
+    timeline_rate = (timeline_flags / len(anomaly_matrix)) * 100 if len(anomaly_matrix) else 0.0
+
+    return false_positives, pointwise_rate, timeline_rate
 
 def get_ground_truth_start(incident_filename):
     """Matches the unique filename hash to the true start time in incidents.log cleanly."""
@@ -36,9 +57,11 @@ def get_ground_truth_start(incident_filename):
     return None
 
 def evaluate_incident(detector, baseline_df, file_path):
+    """Evaluates a single incident file against the provided detector and baseline, returning the first triggered metric and detection delay in seconds."""
+
     incident_df = pd.read_parquet(file_path)
     incident_df.index = pd.to_datetime(incident_df.index, utc=True)
-    """Evaluates a single incident file against the provided detector and baseline, returning the first triggered metric and detection delay in seconds."""
+    
     # Clean and isolate the simulation window
     # We assign a matching single session ID so the rolling calculations roll naturally
     sim_baseline = baseline_df.copy()
@@ -89,6 +112,40 @@ def evaluate_incident(detector, baseline_df, file_path):
         
     return trigger_metric, delay_seconds
 
+
+def evaluate_incident_dir(label, directory, baseline_df, mad_detector, forecast_detector):
+    print(f"Part {label}: Evaluating {os.path.basename(directory).capitalize()} Chaos Incident Matrix...")
+
+    incident_files = sorted(glob.glob(os.path.join(directory, "*.parquet")))
+    if not incident_files:
+        print(f"No incident files found in {directory}")
+        print("-" * 75)
+        return
+
+    results_matrix = []
+    for f_path in incident_files:
+        name = os.path.basename(f_path)
+
+        # Evaluate using the Robust MAD detector
+        mad_metric, mad_delay = evaluate_incident(mad_detector, baseline_df, f_path)
+        mad_delay_str = f"{int(mad_delay)}s" if mad_delay is not None else "N/A"
+
+        # Evaluate using the Adaptive Forecast detector
+        fc_metric, fc_delay = evaluate_incident(forecast_detector, baseline_df, f_path)
+        fc_delay_str = f"{int(fc_delay)}s" if fc_delay is not None else "N/A"
+
+        results_matrix.append({
+            "File Name": name,
+            "MAD Metric": mad_metric,
+            "MAD Delay": mad_delay_str,
+            "Forecast Metric": fc_metric,
+            "Forecast Delay": fc_delay_str
+        })
+
+    df_matrix = pd.DataFrame(results_matrix)
+    print(df_matrix.to_string(index=False))
+    print("-" * 75)
+
 def main():
     if not os.path.exists(BASELINE_PATH):
         print("baseline.parquet not found!")
@@ -107,45 +164,19 @@ def main():
     
     # 1a. Run Baseline for MAD
     baseline_results_mad = mad_detector.fit_predict(baseline_clean)
-    false_positives_mad = sum(baseline_results_mad[col].sum() for col in baseline_results_mad.columns if "anomaly" in col)
-    fp_rate_mad = (false_positives_mad / len(baseline_results_mad)) * 100
+    false_positives_mad, pointwise_rate_mad, timeline_rate_mad = summarize_false_alarm_rates(baseline_results_mad)
     
     # 1b. Run Baseline for Forecasting Residuals
     baseline_results_fc = forecast_detector.fit_predict(baseline_clean)
-    false_positives_fc = sum(baseline_results_fc[col].sum() for col in baseline_results_fc.columns if "anomaly" in col)
-    fp_rate_fc = (false_positives_fc / len(baseline_results_fc)) * 100
+    false_positives_fc, pointwise_rate_fc, timeline_rate_fc = summarize_false_alarm_rates(baseline_results_fc)
     
     print(f"   Clean Steps Evaluated: {len(baseline_clean)}")
-    print(f"   MAD False Alarms Triggered: {false_positives_mad} ({fp_rate_mad:.2f}% FPR)")
-    print(f"   Forecast False Alarms Triggered: {false_positives_fc} ({fp_rate_fc:.2f}% FPR)")
+    print(f"   MAD False Alarms Triggered: {false_positives_mad} ({pointwise_rate_mad:.2f}% point-wise, {timeline_rate_mad:.2f}% timeline)")
+    print(f"   Forecast False Alarms Triggered: {false_positives_fc} ({pointwise_rate_fc:.2f}% point-wise, {timeline_rate_fc:.2f}% timeline)")
     print("-" * 75)
-    
-    # Loop and Benchmark Train Incidents
-    print("Part 2: Evaluating Training Chaos Incident Matrix...")
-    incident_files = glob.glob(os.path.join(TRAIN_INCIDENTS_DIR, "*.parquet"))
-    
-    results_matrix = []
-    for f_path in incident_files:
-        name = os.path.basename(f_path)
-        
-        # Evaluate using the Robust MAD detector
-        mad_metric, mad_delay = evaluate_incident(mad_detector, baseline_df, f_path)
-        mad_delay_str = f"{int(mad_delay)}s" if mad_delay is not None else "N/A"
-        
-        # Evaluate using the Adaptive Forecast detector
-        fc_metric, fc_delay = evaluate_incident(forecast_detector, baseline_df, f_path)
-        fc_delay_str = f"{int(fc_delay)}s" if fc_delay is not None else "N/A"
-        
-        results_matrix.append({
-            "File Name": name[:30],
-            "MAD Metric": mad_metric[:20],
-            "MAD Delay": mad_delay_str,
-            "Forecast Metric": fc_metric[:20],
-            "Forecast Delay": fc_delay_str
-        })
-        
-    df_matrix = pd.DataFrame(results_matrix)
-    print(df_matrix.to_string(index=False))
+
+    evaluate_incident_dir("2", TRAIN_INCIDENTS_DIR, baseline_df, mad_detector, forecast_detector)
+    evaluate_incident_dir("3", TEST_INCIDENTS_DIR, baseline_df, mad_detector, forecast_detector)
 
 if __name__ == "__main__":
     main()
