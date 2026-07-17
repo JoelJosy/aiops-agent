@@ -1,0 +1,11 @@
+{"incident_id": "b50614d5-f3eb-43ca-bd96-f86bef920718", "fault_type": "redis_latency", "target": "aiops-app", "start": "2026-07-15T15:58:33Z", "end": "2026-07-15T15:59:33Z", "params": {"delay_ms": 500}}
+{"incident_id": "9fc6ee70-1c7d-4aa9-b110-340e260244d5", "fault_type": "app_outage", "target": "aiops-app", "start": "2026-07-15T16:21:03Z", "end": "2026-07-15T16:21:35Z", "params": {}}
+{"incident_id": "8db2dfbc-2267-4d24-908b-b80a33ede60f", "fault_type": "redis_outage", "target": "redis", "start": "2026-07-15T16:30:47Z", "end": "2026-07-15T16:31:18Z", "params": {}}
+{"incident_id": "fdc80266-2bee-4c90-8d57-9eab760e0844", "fault_type": "downstream_latency", "target": "aiops-app", "start": "2026-07-15T17:45:00Z", "end": "2026-07-15T17:46:00Z", "params": {"dependency": "catalog-service", "delay_ms": 500}}
+{"incident_id": "a00e71c7-358c-47bf-96ca-02ceebed31da", "fault_type": "downstream_latency", "target": "aiops-app", "start": "2026-07-15T17:53:14Z", "end": "2026-07-15T17:54:14Z", "params": {"dependency": "catalog-service", "delay_ms": 500}}
+{"incident_id": "fd739d70-1b07-4e97-9b62-094b0fdc042a", "fault_type": "downstream_failure", "target": "aiops-app", "start": "2026-07-15T18:47:59Z", "end": "2026-07-15T18:48:59Z", "params": {"dependency": "catalog-service", "failure_rate": 1.0}}
+{"incident_id": "52dcb84f-bf66-4462-b165-d3eafc4dfe01", "fault_type": "cpu_spike", "target": "aiops-app", "start": "2026-07-15T20:05:18Z", "end": "2026-07-15T20:06:18Z", "params": {"workers": 1}}
+{"incident_id": "84277f58-99c4-4d75-a62a-3bfc072133d2", "fault_type": "memory_spike", "target": "aiops-app", "start": "2026-07-15T20:07:23Z", "end": "2026-07-15T20:08:23Z", "params": {"allocated_mb": 75}}
+{"incident_id": "5742c596-6c49-465f-82de-975188bdfa0d", "fault_type": "redis_outage", "target": "redis", "start": "2026-07-16T08:50:42Z", "end": "2026-07-16T08:51:12Z", "params": {}}
+{"incident_id": "f222e70b-1081-4669-b8c3-34025a73f40a", "fault_type": "downstream_latency", "target": "aiops-app", "start": "2026-07-16T14:47:41Z", "end": "2026-07-16T14:48:41Z", "params": {"dependency": "catalog-service", "delay_ms": 500}}
+{"incident_id": "35c25d43-fe41-4904-b67a-77f6241bfbc2", "fault_type": "memory_leak", "target": "aiops-app", "start": "2026-07-16T17:21:00Z", "end": "2026-07-16T17:26:00Z", "params": {"allocated_mb": 500}}
