@@ -1,4 +1,3 @@
-# detector/evaluate.py
 import os
 import glob
 import json
@@ -57,7 +56,7 @@ def get_ground_truth_start(incident_filename):
     return None
 
 def evaluate_incident(detector, baseline_df, file_path):
-    """Evaluates a single incident file against the provided detector and baseline, returning the first triggered metric and detection delay in seconds."""
+    """Evaluates a single incident file against the provided detector and baseline, returning the first triggered metric, detection delay in seconds, and the full results DataFrame."""
 
     incident_df = pd.read_parquet(file_path)
     incident_df.index = pd.to_datetime(incident_df.index, utc=True)
@@ -81,7 +80,12 @@ def evaluate_incident(detector, baseline_df, file_path):
             combined_clean[col] = combined_clean[col].replace(0, np.nan).ffill().bfill()
             
     combined_clean["session_id"] = 0
-    
+
+    context = pd.Timedelta(minutes=5)
+    window_start = max(combined_clean.index.min(), incident_df.index.min() - context)
+    window_end = min(combined_clean.index.max(), incident_df.index.max() + context)
+    raw_window_df = combined_clean.loc[window_start:window_end].copy()
+
     # Run Detector
     results = detector.fit_predict(combined_clean)
     
@@ -109,8 +113,8 @@ def evaluate_incident(detector, baseline_df, file_path):
         t1 = earliest_trigger.tz_localize(None) if earliest_trigger.tzinfo else earliest_trigger
         t2 = gt_start.tz_localize(None) if gt_start.tzinfo else gt_start
         delay_seconds = max(0, (t1 - t2).total_seconds())
-        
-    return trigger_metric, delay_seconds
+
+    return trigger_metric, delay_seconds, inc_results, raw_window_df
 
 
 def evaluate_incident_dir(label, directory, baseline_df, mad_detector, forecast_detector):
@@ -127,11 +131,11 @@ def evaluate_incident_dir(label, directory, baseline_df, mad_detector, forecast_
         name = os.path.basename(f_path)
 
         # Evaluate using the Robust MAD detector
-        mad_metric, mad_delay = evaluate_incident(mad_detector, baseline_df, f_path)
+        mad_metric, mad_delay, _, _ = evaluate_incident(mad_detector, baseline_df, f_path)
         mad_delay_str = f"{int(mad_delay)}s" if mad_delay is not None else "N/A"
 
         # Evaluate using the Adaptive Forecast detector
-        fc_metric, fc_delay = evaluate_incident(forecast_detector, baseline_df, f_path)
+        fc_metric, fc_delay, _, _ = evaluate_incident(forecast_detector, baseline_df, f_path)
         fc_delay_str = f"{int(fc_delay)}s" if fc_delay is not None else "N/A"
 
         results_matrix.append({
