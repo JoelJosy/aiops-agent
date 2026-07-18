@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from rootcause.topology import DEPENDENCY_PRIOR
+from mad_detector import DRIFT_METRICS
 
 FAULT_TO_ROOT_METRIC = {
     "redis_latency": "redis_average_latency_seconds",
@@ -83,9 +84,9 @@ def rank_root_causes(events: list[dict], full_window_df: pd.DataFrame) -> list[d
         # Average correlation strength + earliness bonus vs. metrics it plausibly explains
         corr_scores = []
         for other in explained:
-            lag, corr = best_lag_correlation(full_window_df[metric], full_window_df[other["metric"]])
-            
-            if lag >= 0:  # metric leads or is simultaneous — consistent with causing it
+            series_a = full_window_df[metric].diff().fillna(0) if metric in DRIFT_METRICS else full_window_df[metric]
+            lag, corr = best_lag_correlation(series_a, full_window_df[other["metric"]])
+            if lag >= 0:
                 corr_scores.append(abs(corr))
         corr_score = np.mean(corr_scores) if corr_scores else 0.0
 

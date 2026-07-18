@@ -8,7 +8,7 @@ METRIC_CONFIGS = {
     "app_error_rate": {"window": 6, "threshold": 3.0},           # Fast reaction
     "redis_average_latency_seconds": {"window": 8, "threshold": 3.5},
     "cache_error_rate": {"window": 6, "threshold": 3.0},
-    "downstream_average_latency_seconds": {"window": 8, "threshold": 3.5},
+    "downstream_average_latency_seconds": {"window": 6, "threshold": 3.0}, 
     "downstream_error_rate": {"window": 6, "threshold": 3.0},
     "process_cpu_rate": {"window": 10, "threshold": 3.5},
     "process_resident_memory_bytes": {"window": 20, "threshold": 2.5}, # Slow accumulation, tight threshold
@@ -91,18 +91,21 @@ class MADDetector:
                 # SESSION ISOLATED ROLLING CALCULATIONS
                 # Grouping by session_id prevents windows from crossing overnight/idle gaps
                 grouped = df_clean.groupby("session_id")[metric]
+                # exclude current point from its own reference stats
+                lagged = grouped.shift(1)  
+                grouped_lagged = lagged.groupby(df_clean["session_id"])
 
                 # Rolling Median
-                rolling_median = grouped.rolling(window=w, min_periods=2).median().reset_index(level=0, drop=True)
+                rolling_median = grouped_lagged.rolling(window=w, min_periods=2).median().reset_index(level=0, drop=True)
 
                 # Absolute Deviations
-                deviations = (df_clean[metric] - rolling_median).abs()
+                deviations_hist = (lagged - rolling_median).abs()
 
                 # Rolling MAD (Median of Absolute Deviations)
-                rolling_mad = deviations.groupby(df_clean["session_id"]).rolling(window=w, min_periods=2).median().reset_index(level=0, drop=True)
-                
+                rolling_mad = deviations_hist.groupby(df_clean["session_id"]).rolling(window=w, min_periods=2).median().reset_index(level=0, drop=True)
 
                 # Compute Anomaly Score (Modified Z-score)
+                deviations = (df_clean[metric] - rolling_median).abs()
                 safe_mad = rolling_mad.replace(0, 1e-9)
                 scores = 0.6745 * deviations / safe_mad
 

@@ -7,7 +7,7 @@ METRIC_CONFIGS = {
     "app_error_rate": {"alpha": 0.4, "threshold": 3.0},
     "redis_average_latency_seconds": {"alpha": 0.3, "threshold": 3.5},
     "cache_error_rate": {"alpha": 0.4, "threshold": 3.0},
-    "downstream_average_latency_seconds": {"alpha": 0.3, "threshold": 3.5},
+    "downstream_average_latency_seconds": {"alpha": 0.4, "threshold": 3.0},
     "downstream_error_rate": {"alpha": 0.4, "threshold": 3.0},
     "process_cpu_rate": {"alpha": 0.3, "threshold": 3.5},
     "process_resident_memory_bytes": {"alpha": 0.1, "threshold": 2.5}, # Tight alpha captures slow drift
@@ -98,12 +98,14 @@ class ForecastResidualDetector:
                 residuals = (df_clean[metric] - forecasts).abs()
 
                 # Apply Rolling MAD to the Residuals (using a fixed evaluation window of 12 steps)
-                grouped_res = residuals.groupby(df_clean["session_id"])
+                lagged_residuals = residuals.groupby(df_clean["session_id"]).shift(1)  # exclude current point from its own reference stats
+                grouped_res = lagged_residuals.groupby(df_clean["session_id"])
                 rolling_median_res = grouped_res.rolling(window=12, min_periods=2).median().reset_index(level=0, drop=True)
-                dev_from_med_res = (residuals - rolling_median_res).abs()
-                rolling_mad_res = dev_from_med_res.groupby(df_clean["session_id"]).rolling(window=12, min_periods=2).median().reset_index(level=0, drop=True)
+                dev_from_med_res_hist = (lagged_residuals - rolling_median_res).abs()
+                rolling_mad_res = dev_from_med_res_hist.groupby(df_clean["session_id"]).rolling(window=12, min_periods=2).median().reset_index(level=0, drop=True)
 
                 # Compute Anomaly Score on the Error
+                dev_from_med_res = (residuals - rolling_median_res).abs()
                 safe_mad = rolling_mad_res.replace(0, 1e-9)
                 scores = 0.6745 * dev_from_med_res / safe_mad
 
