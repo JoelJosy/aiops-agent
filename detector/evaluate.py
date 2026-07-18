@@ -63,7 +63,16 @@ def evaluate_incident(detector, baseline_df, file_path):
     
     # Clean and isolate the simulation window
     # We assign a matching single session ID so the rolling calculations roll naturally
-    sim_baseline = baseline_df.copy()
+
+    CONTEXT_MINUTES = 120  
+
+    baseline_window = baseline_df.loc[baseline_df.index.max() - pd.Timedelta(minutes=CONTEXT_MINUTES):].copy()
+
+    # Re-anchor this baseline slice to end right before the incident starts — removes the real-time gap entirely, which interpolation would otherwise fill with a false "normal" trend.
+    offset = incident_df.index.min() - baseline_window.index.max() - pd.Timedelta(seconds=30)
+    baseline_window.index = baseline_window.index + offset
+
+    sim_baseline = baseline_window
     sim_baseline["session_id"] = 0
     
     sim_incident = incident_df.copy()
