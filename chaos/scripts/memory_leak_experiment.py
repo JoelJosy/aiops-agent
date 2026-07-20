@@ -2,7 +2,8 @@ import time
 import requests
 from datetime import datetime, timezone
 from scripts.experiment_utils import MEMORY_LEAK_URL
-from incident_logger import log_incident
+from chaos.incident_logger import log_incident
+from service.logger import logger
 
 def run_memory_leak_experiment(duration_seconds: int, megabytes: int, steps: int = 5):
     """Trigger a stepped, continuous Memory Leak"""

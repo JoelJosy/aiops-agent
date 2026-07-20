@@ -2,6 +2,7 @@ import subprocess
 import time
 
 import requests
+from service.logger import logger
 
 
 APP_URL = "http://localhost:8000"

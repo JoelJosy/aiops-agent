@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 
 import requests
 
-from incident_logger import log_incident
+from chaos.incident_logger import log_incident
+from service.logger import logger
 
 from scripts.experiment_utils import CHAOS_URL
 

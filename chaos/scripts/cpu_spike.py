@@ -2,7 +2,8 @@ import requests
 import time
 from datetime import datetime, timezone
 
-from incident_logger import log_incident
+from chaos.incident_logger import log_incident
+from service.logger import logger
 from scripts.experiment_utils import CPU_BURN_URL
 
 def run_cpu_spike_experiment(duration_seconds: int, workers: int):

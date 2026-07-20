@@ -2,7 +2,8 @@ import subprocess
 import time
 from datetime import datetime, timezone
 
-from incident_logger import log_incident
+from chaos.incident_logger import log_incident
+from service.logger import logger
 
 from scripts.experiment_utils import poll_health
 
