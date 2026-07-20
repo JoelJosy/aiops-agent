@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timezone
 from typing import Union
-from metric_queries import QUERIES
+from detector.metric_queries import QUERIES
 
 PROMETHEUS_URL = "http://localhost:9090/api/v1/query_range"
 
