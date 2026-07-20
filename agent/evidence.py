@@ -1,10 +1,17 @@
 from datetime import timedelta
+import os
+from pathlib import Path
+import json
+import pandas as pd
+
+from agent.logs import load_logs
 from detector.metric_queries import QUERIES
 from detector.prometheus_api import fetch_metric
 from agent.state import DiagnosisState
+from service.logger import LOG_FILE
 
 def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
-    """Summarizes evidence for each ranked candidate."""
+    """Summarizes quantitative evidence from Prometheus API for each ranked candidate."""
 
     for candidate in state["ranked_candidates"]:
         if candidate["confidence"] < 0.3:
@@ -27,10 +34,56 @@ def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
                 "mean": float(df["value"].mean()),
                 "first": float(df["value"].iloc[0]),
                 "last": float(df["value"].iloc[-1]),
-                "change": float(df["value"].iloc[-1] - df["value"].iloc[0]),
                 "peak_time": str(df["value"].idxmax()),
+                "peak_change": float(df["value"].max() - df["value"].iloc[0])
             }
         }
         state["evidence_gathered"].append(evidence)
+
+    return state
+
+def query_recent_app_logs(state):
+    """
+    Collects application log evidence from the incident time window.
+    Summarizes event frequency and attaches representative log samples.
+    """
+
+    start = state["incident_window"]["start"]
+    end = state["incident_window"]["end"]
+
+    logs = load_logs(start, end)
+
+    event_counts = {}
+    samples = []
+
+    for log in logs:
+        event = log.get("event")
+
+        if event:
+            event_counts[event] = (
+                event_counts.get(event, 0) + 1
+            )
+
+            if event in {
+                "redis_get",
+                "redis_set",
+                "downstream_call",
+                "request"
+            } and len(samples) < 10:
+                samples.append({
+                    "timestamp": log["timestamp"],
+                    "event": event,
+                    "details": {
+                        k: v
+                        for k, v in log.items()
+                        if k not in {"timestamp", "level", "message", "event"}
+                    }
+                })
+
+    state["evidence_gathered"].append({
+        "source":"application_logs",
+        "events":event_counts,
+        "samples":samples
+    })
 
     return state
