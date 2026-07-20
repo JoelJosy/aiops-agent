@@ -10,6 +10,7 @@ from detector.prometheus_api import fetch_metric
 from agent.state import DiagnosisState
 from detector.rootcause.analysis import FAULT_TO_ROOT_METRIC
 from service.logger import LOG_FILE
+from agent.utils import get_related_metrics
 
 def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
     """Summarizes quantitative evidence from Prometheus API for each ranked candidate."""
@@ -180,4 +181,49 @@ def query_incident_history(state: DiagnosisState):
     })
 
 
+    return state
+
+def investigate_additional_metrics(state: DiagnosisState) -> DiagnosisState:
+    """Escalation node: expand investigation to metrics topologically related
+    to the top candidate."""
+
+    if not state["ranked_candidates"]:
+        return state
+
+    top_candidate = state["ranked_candidates"][0]["metric"]
+    already_checked = {c["metric"] for c in state["ranked_candidates"]}
+    related = get_related_metrics(top_candidate) - already_checked
+
+    if not related:
+        state["evidence_gathered"].append({
+            "source": "extended_metrics",
+            "note": f"no topologically related metrics to check for {top_candidate}",
+        })
+        return state
+
+    start = state["incident_window"]["start"] - timedelta(minutes=10)
+    end = state["incident_window"]["end"]
+
+    findings = []
+    for metric in related:
+        if metric not in QUERIES:
+            continue
+        df = fetch_metric(QUERIES[metric], start, end)
+        if df.empty:
+            continue
+        findings.append({
+            "metric": metric,
+            "min": float(df["value"].min()),
+            "max": float(df["value"].max()),
+            "mean": float(df["value"].mean()),
+            "first": float(df["value"].iloc[0]),
+            "last": float(df["value"].iloc[-1]),
+            "change": float(df["value"].iloc[-1] - df["value"].iloc[0])
+        })
+
+    state["evidence_gathered"].append({
+        "source": "extended_metrics",
+        "reason": f"related to top candidate {top_candidate}",
+        "findings": findings,
+    })
     return state

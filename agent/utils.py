@@ -2,9 +2,17 @@ import json
 from pathlib import Path
 from datetime import datetime
 from service.logger import LOG_FILE
+from detector.rootcause.analysis import DEPENDENCY_PRIOR
 
 DEPLOY_FILE = Path("logs/deploys.jsonl")
 INCIDENT_LOG = Path("chaos/incidents.log")
+
+def get_related_metrics(metric: str) -> set[str]:
+    related = set(DEPENDENCY_PRIOR.get(metric, {}).get("can_cause", []))
+    for m, cfg in DEPENDENCY_PRIOR.items():
+        if metric in cfg.get("can_cause", []):
+            related.add(m)
+    return related
 
 def load_incident_history():
     incidents = []
