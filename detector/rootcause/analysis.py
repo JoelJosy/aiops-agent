@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from rootcause.topology import DEPENDENCY_PRIOR
-from mad_detector import DRIFT_METRICS
+from detector.rootcause.topology import DEPENDENCY_PRIOR
+from detector.mad_detector import DRIFT_METRICS
 
 FAULT_TO_ROOT_METRIC = {
     "redis_latency": "redis_average_latency_seconds",
