@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import pandas as pd
 
-from agent.utils import load_logs, query_deploys
+from agent.utils import load_incident_history, load_logs, query_deploys
 from detector.metric_queries import QUERIES
 from detector.prometheus_api import fetch_metric
 from agent.state import DiagnosisState
@@ -117,6 +117,86 @@ def query_deploy_history(state):
     }
 
     state["evidence_gathered"].append(evidence)
+
+
+    return state
+
+def query_incident_history(state: DiagnosisState):
+
+    history = load_incident_history()
+
+    if not history:
+        return state
+
+
+    # Metrics detected in current incident
+    current_metrics = {
+        c["metric"]
+        for c in state["ranked_candidates"]
+    }
+
+
+    matches = []
+
+    for incident in history:
+
+        # use fault type as historical signature
+        fault_type = incident["fault_type"]
+
+        similarity = 0.0
+
+
+        # map known fault types to expected metrics
+        fault_signature = {
+            "redis_latency": {
+                "redis_average_latency_seconds"
+            },
+            "redis_outage": {
+                "redis_average_latency_seconds"
+            },
+            "downstream_latency": {
+                "downstream_average_latency_seconds"
+            },
+            "cpu_spike": {
+                "process_cpu_rate"
+            },
+            "memory_leak": {
+                "process_resident_memory_bytes"
+            }
+        }
+
+
+        expected = fault_signature.get(
+            fault_type,
+            set()
+        )
+
+
+        if expected:
+            overlap = current_metrics.intersection(expected)
+
+            similarity = len(overlap) / len(expected)
+
+
+        if similarity > 0:
+            matches.append({
+                "fault_type": fault_type,
+                "similarity": round(similarity,2),
+                "occurred_at": incident["start"],
+                "params": incident["params"]
+            })
+
+
+    matches = sorted(
+        matches,
+        key=lambda x: -x["similarity"]
+    )[:3]
+
+
+    state["evidence_gathered"].append({
+        "source": "incident_history",
+        "similar_cases": matches
+    })
 
 
     return state

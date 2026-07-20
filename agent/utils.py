@@ -4,6 +4,19 @@ from datetime import datetime
 from service.logger import LOG_FILE
 
 DEPLOY_FILE = Path("logs/deploys.jsonl")
+INCIDENT_LOG = Path("chaos/incidents.log")
+
+def load_incident_history():
+    incidents = []
+
+    if not INCIDENT_LOG.exists():
+        return incidents
+
+    with open(INCIDENT_LOG) as f:
+        for line in f:
+            incidents.append(json.loads(line))
+
+    return incidents
 
 def load_deploy_history():
 
@@ -17,8 +30,6 @@ def load_deploy_history():
             events.append(json.loads(line))
 
     return events
-
-
 
 def query_deploys(start, end):
 

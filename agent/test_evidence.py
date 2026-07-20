@@ -1,15 +1,17 @@
-from agent.tool_nodes import query_deploy_history
+from agent.tool_nodes import query_incident_history
 
 
 state = {
-    "incident_window": {
-        "start": "2026-07-20T18:40:00Z",
-        "end": "2026-07-20T18:51:00Z"
-    },
-    "evidence_gathered": []
+    "ranked_candidates": [
+        {
+            "metric":"redis_average_latency_seconds",
+            "confidence":0.6
+        }
+    ],
+    "evidence_gathered":[]
 }
 
 
-result = query_deploy_history(state)
+result = query_incident_history(state) #type: ignore
 
 print(result["evidence_gathered"])
