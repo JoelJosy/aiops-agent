@@ -8,6 +8,7 @@ from agent.utils import load_incident_history, load_logs, query_deploys
 from detector.metric_queries import QUERIES
 from detector.prometheus_api import fetch_metric
 from agent.state import DiagnosisState
+from detector.rootcause.analysis import FAULT_TO_ROOT_METRIC
 from service.logger import LOG_FILE
 
 def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
@@ -21,6 +22,9 @@ def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
         end = candidate["offset"] + timedelta(seconds=30)
 
         df = fetch_metric(QUERIES[candidate["metric"]], start, end)
+
+        if df.empty:
+            continue
 
         evidence = {
             "source": "metric_analysis",
@@ -145,31 +149,8 @@ def query_incident_history(state: DiagnosisState):
 
         similarity = 0.0
 
-
-        # map known fault types to expected metrics
-        fault_signature = {
-            "redis_latency": {
-                "redis_average_latency_seconds"
-            },
-            "redis_outage": {
-                "redis_average_latency_seconds"
-            },
-            "downstream_latency": {
-                "downstream_average_latency_seconds"
-            },
-            "cpu_spike": {
-                "process_cpu_rate"
-            },
-            "memory_leak": {
-                "process_resident_memory_bytes"
-            }
-        }
-
-
-        expected = fault_signature.get(
-            fault_type,
-            set()
-        )
+        expected_metric = FAULT_TO_ROOT_METRIC.get(fault_type)
+        expected = {expected_metric} if expected_metric else set()
 
 
         if expected:

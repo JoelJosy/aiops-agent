@@ -2,9 +2,9 @@ import os
 import glob
 import json
 import pandas as pd
-from mad_detector import MADDetector
-from evaluate import evaluate_incident, BASELINE_PATH, INCIDENTS_LOG
-from rootcause.analysis import extract_events, rank_root_causes, FAULT_TO_ROOT_METRIC
+from detector.mad_detector import MADDetector
+from detector.evaluate import evaluate_incident, BASELINE_PATH, INCIDENTS_LOG
+from detector.rootcause.analysis import extract_events, rank_root_causes, FAULT_TO_ROOT_METRIC
 
 def get_fault_type(file_path):
     base = os.path.basename(file_path).replace(".parquet", "")

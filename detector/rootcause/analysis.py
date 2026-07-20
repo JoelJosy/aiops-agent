@@ -66,22 +66,28 @@ def best_lag_correlation(series_a: pd.Series, series_b: pd.Series, max_lag_steps
 
 def rank_root_causes(events: list[dict], full_window_df: pd.DataFrame) -> list[dict]:
     if len(events) == 1:
-        return [{"metric": events[0]["metric"], "confidence": 1.0, "reason": "sole_event"}]
+        ev = events[0]
+        return [{
+            "metric": ev["metric"], "confidence": 1.0, "prior": 1.0, "corr": 1.0, "onset_rank": 1.0,
+            "onset": ev["onset"], "offset": ev["offset"], "peak_score": ev["peak_score"],
+            "explains": [], "reason": "sole_event",
+        }]
 
     hard_hit = next((e for e in events if e["metric"] in HARD_OUTAGE_METRICS), None)
     if hard_hit:
-        return [{"metric": hard_hit["metric"], "confidence": 1.0, "reason": "hard_outage_signal"}]
-
+        return [{
+            "metric": hard_hit["metric"], "confidence": 1.0, "prior": 1.0, "corr": 1.0, "onset_rank": 1.0,
+            "onset": hard_hit["onset"], "offset": hard_hit["offset"], "peak_score": hard_hit["peak_score"],
+            "explains": [], "reason": "hard_outage_signal",
+        }]
 
     candidates = []
     for ev in events:
         metric = ev["metric"]
         prior_targets = DEPENDENCY_PRIOR.get(metric, {}).get("can_cause", [])
-        # How many OTHER flagged metrics could this one plausibly have caused?
         explained = [e for e in events if e["metric"] in prior_targets]
         prior_score = len(explained) / max(1, len(events) - 1)
 
-        # Average correlation strength + earliness bonus vs. metrics it plausibly explains
         corr_scores = []
         for other in explained:
             series_a = full_window_df[metric].diff().fillna(0) if metric in DRIFT_METRICS else full_window_df[metric]
@@ -94,9 +100,18 @@ def rank_root_causes(events: list[dict], full_window_df: pd.DataFrame) -> list[d
 
         confidence = 0.5 * prior_score + 0.35 * corr_score + 0.15 * onset_rank
 
-        # in rank_root_causes, right before appending to candidates:
         print(f"  [{metric}] prior={prior_score:.2f} corr={corr_score:.2f} onset={onset_rank:.2f} -> conf={confidence:.3f}")
-        
-        candidates.append({"metric": metric, "confidence": round(confidence, 3), "explains": [e["metric"] for e in explained]})
+
+        candidates.append({
+            "metric": metric,
+            "confidence": round(confidence, 3),
+            "prior": round(prior_score, 3),
+            "corr": round(float(corr_score), 3),
+            "onset_rank": round(onset_rank, 3),
+            "onset": ev["onset"],
+            "offset": ev["offset"],
+            "peak_score": ev["peak_score"],
+            "explains": [e["metric"] for e in explained],
+        })
 
     return sorted(candidates, key=lambda c: -c["confidence"])

@@ -3,8 +3,8 @@ import glob
 import json
 import pandas as pd
 import numpy as np
-from mad_detector import MADDetector
-from forecast_detector import ForecastResidualDetector 
+from detector.mad_detector import MADDetector
+from detector.forecast_detector import ForecastResidualDetector 
 
 BASELINE_PATH = "data/baseline.parquet"
 TRAIN_INCIDENTS_DIR = "data/incidents/train"

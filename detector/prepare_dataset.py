@@ -2,7 +2,7 @@ import os
 import json
 import pandas as pd
 from datetime import datetime, timezone, timedelta
-from prometheus_api import fetch_feature_table
+from detector.prometheus_api import fetch_feature_table
 
 
 RAW_PARQUET = "data/telemetry_48h_raw.parquet"
