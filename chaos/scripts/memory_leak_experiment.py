@@ -1,7 +1,7 @@
 import time
 import requests
 from datetime import datetime, timezone
-from scripts.experiment_utils import MEMORY_LEAK_URL
+from chaos.scripts.experiment_utils import MEMORY_LEAK_URL
 from chaos.incident_logger import log_incident
 from service.logger import logger
 

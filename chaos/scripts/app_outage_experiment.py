@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from chaos.incident_logger import log_incident
 from service.logger import logger
 
-from scripts.experiment_utils import poll_health
+from chaos.scripts.experiment_utils import poll_health
 
 
 def run_outage_experiment(duration_seconds: int, target: str):

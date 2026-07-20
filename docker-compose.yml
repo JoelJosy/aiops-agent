@@ -9,8 +9,11 @@ services:
       - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - LOG_FILE=/app/logs/app.jsonl
     depends_on:
       - redis
+    volumes:
+      - ./logs:/app/logs
       
   prometheus:
     image: prom/prometheus:latest

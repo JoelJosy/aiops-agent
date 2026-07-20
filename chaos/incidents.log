@@ -9,3 +9,5 @@
 {"incident_id": "5742c596-6c49-465f-82de-975188bdfa0d", "fault_type": "redis_outage", "target": "redis", "start": "2026-07-16T08:50:42Z", "end": "2026-07-16T08:51:12Z", "params": {}}
 {"incident_id": "f222e70b-1081-4669-b8c3-34025a73f40a", "fault_type": "downstream_latency", "target": "aiops-app", "start": "2026-07-16T14:47:41Z", "end": "2026-07-16T14:48:41Z", "params": {"dependency": "catalog-service", "delay_ms": 500}}
 {"incident_id": "35c25d43-fe41-4904-b67a-77f6241bfbc2", "fault_type": "memory_leak", "target": "aiops-app", "start": "2026-07-16T17:21:00Z", "end": "2026-07-16T17:26:00Z", "params": {"allocated_mb": 500}}
+{"incident_id": "3fa9bd4d-8900-4409-8915-36dfba7b145a", "fault_type": "downstream_latency", "target": "aiops-app", "start": "2026-07-20T18:45:57Z", "end": "2026-07-20T18:46:57Z", "params": {"dependency": "catalog-service", "delay_ms": 500}}
+{"incident_id": "8749706e-16fc-4a75-a185-74e97dfabaee", "fault_type": "redis_latency", "target": "aiops-app", "start": "2026-07-20T18:49:15Z", "end": "2026-07-20T18:50:15Z", "params": {"delay_ms": 500}}

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from chaos.incident_logger import log_incident
 from service.logger import logger
-from scripts.experiment_utils import DOWNSTREAM_FAILURE_URL
+from chaos.scripts.experiment_utils import DOWNSTREAM_FAILURE_URL
 
 
 def run_downstream_failure_experiment(duration_seconds: int, failure_rate: float):
