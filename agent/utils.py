@@ -3,6 +3,35 @@ from pathlib import Path
 from datetime import datetime
 from service.logger import LOG_FILE
 
+DEPLOY_FILE = Path("logs/deploys.jsonl")
+
+def load_deploy_history():
+
+    events = []
+
+    if not DEPLOY_FILE.exists():
+        return events
+
+    with open(DEPLOY_FILE) as f:
+        for line in f:
+            events.append(json.loads(line))
+
+    return events
+
+
+
+def query_deploys(start, end):
+
+    nearby = []
+
+    for event in load_deploy_history():
+
+        ts = datetime.fromisoformat(event["timestamp"])
+
+        if start <= ts <= end:
+            nearby.append(event)
+
+    return nearby
 
 def load_logs(start, end):
 

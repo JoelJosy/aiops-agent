@@ -1,0 +1,3 @@
+{"timestamp":"2026-07-20T18:00:00+00:00","service":"aiops-app","event":"container_started","container":"aiops-agent-aiops-app-1","image":"aiops-agent-aiops-app"}
+{"timestamp":"2026-07-20T18:05:00+00:00","service":"redis","event":"container_started","container":"aiops-agent-redis-1","image":"redis:7-alpine"}
+{"timestamp":"2026-07-20T18:45:25+00:00","service":"aiops-app","event":"container_restart","container":"aiops-agent-aiops-app-1","image":"aiops-agent-aiops-app"}

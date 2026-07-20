@@ -1,10 +1,10 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 import os
 from pathlib import Path
 import json
 import pandas as pd
 
-from agent.logs import load_logs
+from agent.utils import load_logs, query_deploys
 from detector.metric_queries import QUERIES
 from detector.prometheus_api import fetch_metric
 from agent.state import DiagnosisState
@@ -85,5 +85,38 @@ def query_recent_app_logs(state):
         "events":event_counts,
         "samples":samples
     })
+
+    return state
+
+def query_deploy_history(state):
+    """
+    Checks whether any deployments happened close to the incident window.
+    Adds deployment context as evidence for diagnosis.
+    """
+
+    start = datetime.fromisoformat(
+        state["incident_window"]["start"].replace("Z", "+00:00")
+    )
+    end = datetime.fromisoformat(
+        state["incident_window"]["end"].replace("Z", "+00:00")
+    )
+    
+
+    # look 15 minutes before and after incident
+    search_start = start - timedelta(minutes=15)
+    search_end = end + timedelta(minutes=15)
+
+
+    deploys = query_deploys(search_start, search_end)
+
+
+    evidence = {
+        "source": "deploy_history",
+        "recent_deploys": deploys,
+        "count": len(deploys)
+    }
+
+    state["evidence_gathered"].append(evidence)
+
 
     return state
