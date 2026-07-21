@@ -17,18 +17,27 @@ Important:
 - Only use facts present in the evidence.
 - Never assume infrastructure changes that are not mentioned.
 
-Remediation guidelines:
-- restart_service:
-    use only if the application/service appears unhealthy or unavailable.
-- flush_cache:
-    use ONLY when evidence indicates stale or corrupted cached data.
-    Do NOT use for latency, timeout, or performance degradation.
-- scale_out:
-    use for resource saturation caused by load.
-- rollback_deploy:
-    use only when a recent deployment is linked to the incident.
-- none:
-    is preferred when the root cause is a performance metric anomaly without a clear safe fix.
+Remediation guidelines (Action selection):
+restart_service
+- Application unavailable
+- Redis unavailable
+- Memory leak requiring temporary recovery
+
+scale_out
+- Sustained CPU saturation
+- High request rate causing overload
+
+flush_cache
+- Stale or corrupted cache only
+- Never use for latency
+
+rollback_deploy
+- Recent deployment strongly linked to incident
+
+none
+- No safe automated remediation exists
+- Root cause is external
+- More investigation required
 
 Before recommending remediation:
 - Check whether the action logically addresses the root cause metric.
