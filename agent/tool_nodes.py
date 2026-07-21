@@ -1,8 +1,5 @@
 from datetime import timedelta, datetime
-import os
-from pathlib import Path
-import json
-import pandas as pd
+from langgraph.types import interrupt
 
 from agent.utils import load_incident_history, load_logs, query_deploys
 from detector.metric_queries import QUERIES
@@ -201,8 +198,9 @@ def investigate_additional_metrics(state: DiagnosisState) -> DiagnosisState:
         })
         return state
 
-    start = state["incident_window"]["start"] - timedelta(minutes=10)
-    end = state["incident_window"]["end"]
+    start = datetime.fromisoformat(state["incident_window"]["start"].replace("Z","+00:00")) - timedelta(minutes=10)
+    end = datetime.fromisoformat(state["incident_window"]["end"].replace("Z","+00:00"))
+
 
     findings = []
     for metric in related:
@@ -227,3 +225,21 @@ def investigate_additional_metrics(state: DiagnosisState) -> DiagnosisState:
         "findings": findings,
     })
     return state
+
+def approval_gate(state: DiagnosisState) -> DiagnosisState:
+    """
+    Human approval before executing high-risk remediation.
+    """
+
+    decision = interrupt({
+        "recommended_action": state["remediation_action"],
+        "root_cause": state["diagnosed_root_cause"],
+        "confidence": state["confidence"],
+        "hypothesis": state["hypothesis"],
+        "reasoning": state["reasoning"],
+    })
+
+    state["approval_status"] = decision
+
+    return state
+

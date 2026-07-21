@@ -43,6 +43,15 @@ Before recommending remediation:
 - Check whether the action logically addresses the root cause metric.
 - Do not recommend actions that do not affect the identified metric.
 
+Note: 
+Redis latency alone is NOT evidence that the application should be restarted.
+
+Only recommend restart_service if evidence indicates the application itself is unhealthy,
+offline, or failing.
+
+If the evidence only shows elevated Redis latency,
+prefer "none" unless cache corruption or cache inconsistency is explicitly shown.
+
 Ranked root cause candidates:
 
 {candidates}

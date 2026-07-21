@@ -2,8 +2,8 @@ from typing import TypedDict, Optional, Any
 from datetime import datetime
 
 class IncidentWindow(TypedDict):
-    start: datetime
-    end: datetime
+    start: str
+    end: str
 
     metrics: dict[str, Any]
 
@@ -37,7 +37,11 @@ class DiagnosisState(TypedDict):
     confidence: float 
     iterations: int
     remediation_action: Optional[str]
-    requires_approval: bool
     needs_more_evidence: bool
     reasoning: str
     diagnosed_root_cause: Optional[str]
+    # Remediation results
+    requires_approval: bool
+    approval_status: str
+    remediation_result: dict
+
