@@ -185,7 +185,7 @@ def query_incident_history(state: DiagnosisState):
 
 def investigate_additional_metrics(state: DiagnosisState) -> DiagnosisState:
     """Escalation node: expand investigation to metrics topologically related
-    to the top candidate."""
+    to the top candidate. Used only if the top candidate is not conclusive and more evidence is needed."""
 
     if not state["ranked_candidates"]:
         return state

@@ -38,3 +38,6 @@ class DiagnosisState(TypedDict):
     iterations: int
     remediation_action: Optional[str]
     requires_approval: bool
+    needs_more_evidence: bool
+    reasoning: str
+    diagnosed_root_cause: Optional[str]
