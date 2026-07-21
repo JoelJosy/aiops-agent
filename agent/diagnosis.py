@@ -112,8 +112,11 @@ def diagnose(state: DiagnosisState) -> DiagnosisState:
 
     state["hypothesis"] = result.get("hypothesis", "")
 
-    
-    state["remediation_action"] = result.get("recommended_action", "none")
+    # Update the remediation action only if the LLM suggests a new one. If it returns "none", we keep the existing action (if any) to avoid overwriting a previously determined safe action.
+    new_action = result.get("recommended_action", "none")
+    if new_action != "none":
+        state["remediation_action"] = new_action
+
     state["diagnosed_root_cause"] = result.get("root_cause")
     state["needs_more_evidence"] = bool(result.get("needs_more_evidence", False))
     state["reasoning"] = result.get("reasoning", "")

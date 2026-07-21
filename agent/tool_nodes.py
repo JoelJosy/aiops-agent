@@ -6,18 +6,23 @@ from detector.metric_queries import QUERIES
 from detector.prometheus_api import fetch_metric
 from agent.state import DiagnosisState
 from detector.rootcause.analysis import FAULT_TO_ROOT_METRIC
-from service.logger import LOG_FILE
 from agent.utils import get_related_metrics
 
 def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
     """Summarizes quantitative evidence from Prometheus API for each ranked candidate."""
 
+    seen = set()
+    
     for candidate in state["ranked_candidates"]:
         if candidate["confidence"] < 0.3:
             continue
 
         start = candidate["onset"] - timedelta(seconds=30)
         end = candidate["offset"] + timedelta(seconds=30)
+
+        if candidate["metric"] in seen:
+            continue
+        seen.add(candidate["metric"])
 
         df = fetch_metric(QUERIES[candidate["metric"]], start, end)
 
