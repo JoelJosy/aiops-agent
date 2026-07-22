@@ -61,6 +61,8 @@ def build_diagnosis_state(detector, baseline_df, incident_file_path) -> Diagnosi
         },
 
         "ranked_candidates": make_json_serializable(ranked_candidates),
+        "phase3_top_candidate": (make_json_serializable(ranked_candidates[0]["metric"]) 
+                                 if ranked_candidates else None),
         "evidence_gathered": [],
         "hypothesis": None,
         "confidence": 0.0,

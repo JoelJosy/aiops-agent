@@ -44,4 +44,5 @@ class DiagnosisState(TypedDict):
     requires_approval: bool
     approval_status: Optional[str]
     remediation_result: Optional[dict]
+    phase3_top_candidate: Optional[str]
 
