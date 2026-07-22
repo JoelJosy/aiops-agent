@@ -86,6 +86,9 @@ for path in incident_files:
         "agent_agrees_with_phase3": result["diagnosed_root_cause"] == state["phase3_top_candidate"],
         "requires_approval": result["requires_approval"],
 
+        "overrode_phase3": result["diagnosed_root_cause"] != state["phase3_top_candidate"],
+        "override_correct": ( result["diagnosed_root_cause"] != state["phase3_top_candidate"] and
+                              result["diagnosed_root_cause"] == expected),
         "phase3_agreement": result["phase3_top_candidate"] == result["diagnosed_root_cause"],
 
         "approval_status": result["approval_status"],
@@ -98,6 +101,17 @@ for path in incident_files:
 
 df = pd.DataFrame(rows)
 print(df)
+
+overrides = df["overrode_phase3"].sum()
+
+correct_overrides = df["override_correct"].sum()
+print(f"""
+    LLM Overrides:
+    {overrides}
+
+    Correct Overrides:
+    {correct_overrides}
+""")
 
 print("\n========== Evaluation Summary ==========")
 accuracy = df["correct"].mean() * 100

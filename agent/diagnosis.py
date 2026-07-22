@@ -15,6 +15,8 @@ def diagnose(state: DiagnosisState) -> DiagnosisState:
     prompt = DIAGNOSIS_PROMPT.format(
         candidates=json.dumps(state["ranked_candidates"], indent=2, default=str),
         evidence=json.dumps(state["evidence_gathered"], indent=2, default=str),
+        # metric_behavior=json.dumps(state["metric_behavior"], indent=2, default=str),
+        candidate_confidence=json.dumps(state["phase3_confidence_gap"], indent=2, default=str),
     )
     response = call_llm(prompt)
 
@@ -62,6 +64,9 @@ def confidence_check(state: DiagnosisState) -> str:
 
     # confident diagnosis
     if state["confidence"] >= 0.6:
+        return "finalize"
+
+    if not state["needs_more_evidence"]:
         return "finalize"
 
     # uncertain diagnosis
