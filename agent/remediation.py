@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import subprocess
+
 from agent.state import DiagnosisState
 
 LOW_RISK_ACTIONS = {
@@ -10,6 +12,9 @@ HIGH_RISK_ACTIONS = {
     "scale_out",
     "rollback_deploy",
 }
+
+SERVICE_NAME = "aiops-app"
+DRY_RUN = True
 
 
 def finalize_diagnosis(state: DiagnosisState) -> DiagnosisState:
@@ -24,16 +29,62 @@ def finalize_diagnosis(state: DiagnosisState) -> DiagnosisState:
     return state
 
 
-def execute_remediation(state: DiagnosisState) -> DiagnosisState:
+def execute_remediation(state: DiagnosisState):
     action = state["remediation_action"]
 
-    result = {
+    timestamp = datetime.now(timezone.utc).isoformat()
+
+
+    if DRY_RUN:
+        state["remediation_result"] = {
+            "action": action,
+            "status": "dry_run",
+            "timestamp": timestamp
+        }
+
+        return state
+
+
+    try:
+        if action == "none": 
+            state["remediation_result"] = {
+                    "action": "none",
+                    "status": "skipped",
+                    "timestamp": timestamp
+            }
+            return state
+        
+        if action == "restart_service": 
+            subprocess.run(
+                ["docker","compose","restart",SERVICE_NAME],
+                check=True,
+                timeout=30
+            )
+
+
+        elif action == "flush_cache": 
+            subprocess.run(
+                ["docker","compose","exec","-T","redis","redis-cli","FLUSHALL"],
+                check=True,
+                timeout=15
+            )
+
+        else:
+            raise ValueError(f"Unknown action {action}")
+        
+        status = "executed"
+
+
+    except Exception as e:
+        status = f"failed: {str(e)}"
+
+
+    state["remediation_result"] = {
         "action": action,
-        "status": "executed",
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "status": status,
+        "timestamp": timestamp
     }
 
-    state["remediation_result"] = result
 
     return state
 
