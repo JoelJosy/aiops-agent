@@ -19,7 +19,7 @@ The highest ranked candidate is usually correct.
 
 However, you are responsible for resolving ambiguous cases.
 
-When the confidence gap between the top two candidates is below 0.15, perform an active comparison between them.
+When the confidence gap between the all candidates within the confidence margin is below 0.15, perform an active comparison between them.
 
 Do not automatically accept the top candidate.
 
@@ -37,6 +37,9 @@ If the confidence gap is large (>0.15), accept the top candidate.
 Prefer causes over symptoms. 
 Also note the following:
 Sudden onset increases the likelihood a metric is causal for spike-type incidents; sustained gradual buildup increases the likelihood a metric is causal for leak-type incidents. Judge based on the shape of the change, not just how early it started
+
+IMPORTANT: 
+Onset timing for process_resident_memory_bytes is not reliable evidence of causal ordering, since memory usage naturally ramps during process startup — weigh its behavior/correlation instead.
 
 - Your job is to explain WHY the candidate is likely correct.
 - Only use facts present in the evidence.
@@ -83,12 +86,12 @@ Ranked root cause candidates:
 
 Candidate comparison requirement:
 
-For the top two candidates, explicitly state:
+For the top candidate and every other candidate within the confidence margin:
 1. Why the top candidate could be correct.
-2. Why the second candidate could be correct.
+2. Why the others could be correct.
 3. Which evidence favors one over the other.
 
-If the second candidate better explains the incident, override.
+If another candidate better explains the incident, override.
 Evidence gathered:
 
 {evidence}
