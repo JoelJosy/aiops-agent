@@ -22,6 +22,19 @@ def finalize_diagnosis(state: DiagnosisState) -> DiagnosisState:
         state["remediation_action"] = "none"
         
     action = state["remediation_action"]
+    root_metric = state["diagnosed_root_cause"]
+
+    # Safety guard: Redis latency alone is not enough for cache flush
+    if action == "flush_cache" and root_metric == "redis_average_latency_seconds":
+        has_cache_error = any(
+            e.get("metric") == "cache_error_rate"
+            for e in state.get("evidence_gathered", [])
+        )
+        if not has_cache_error:
+            action = "none"
+
+    state["remediation_action"] = action
+    
 
     state["requires_approval"] = (action in HIGH_RISK_ACTIONS)
     state["approval_status"] = ("pending" if state["requires_approval"] else "approved")
