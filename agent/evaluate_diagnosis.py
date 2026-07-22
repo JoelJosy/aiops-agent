@@ -71,8 +71,7 @@ for path in incident_files:
 
     print("\nEvidence:")
     for e in result["evidence_gathered"]:
-        if e.get("source") == "causal_analysis":
-            print(e)
+        print(e)
 
     rows.append({
         "file": os.path.basename(path),
