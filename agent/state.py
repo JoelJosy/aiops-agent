@@ -42,6 +42,6 @@ class DiagnosisState(TypedDict):
     diagnosed_root_cause: Optional[str]
     # Remediation results
     requires_approval: bool
-    approval_status: str
-    remediation_result: dict
+    approval_status: Optional[str]
+    remediation_result: Optional[dict]
 
