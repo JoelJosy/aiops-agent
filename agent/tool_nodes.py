@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 from langgraph.types import interrupt
 
-from agent.utils import load_incident_history, load_logs, query_deploys
+from agent.utils import load_incident_history, load_logs, query_deploys, classify_behavior
 from detector.metric_queries import QUERIES
 from detector.prometheus_api import fetch_metric
 from agent.state import DiagnosisState
@@ -29,12 +29,18 @@ def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
         if df.empty:
             continue
 
+        metric_values = df["value"].tolist()
+        behavior = classify_behavior(metric_values, candidate["onset_rank"])
+
         evidence = {
             "source": "metric_analysis",
             "metric": candidate["metric"],
             "confidence": candidate["confidence"],
             "prior": candidate["prior"],
             "correlation": candidate["corr"],
+            "behavior": behavior,
+            "onset_rank": candidate["onset_rank"],
+            "onset": str(candidate["onset"]),
             "summary": {
                 "min": float(df["value"].min()),
                 "max": float(df["value"].max()),

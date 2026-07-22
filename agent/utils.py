@@ -19,28 +19,24 @@ The highest ranked candidate is usually correct.
 
 However, you are responsible for resolving ambiguous cases.
 
-Only reconsider the top candidate when:
-- the confidence difference between the top two candidates is small (<0.15)
-- another candidate has stronger causal evidence
-- temporal ordering contradicts the ranking
-- metric behavior matches a known failure pattern better
+When the confidence gap between the top two candidates is below 0.15, perform an active comparison between them.
+
+Do not automatically accept the top candidate.
+
+Compare:
+- temporal ordering
+- metric behavior pattern
+- correlation strength
+- known failure signatures
+- whether the candidate represents a root cause or a downstream symptom
+
+Override the top candidate if another candidate has stronger causal explanation.
 
 If the confidence gap is large (>0.15), accept the top candidate.
 
-Failure pattern reasoning:
-
-CPU spike:
-- sudden early CPU increase can indicate CPU as upstream cause.
-- latency metrics occurring after CPU increase are usually symptoms.
-
-Memory leak:
-- memory may increase gradually.
-- late memory growth can still be the root cause.
-
-Latency metrics:
-- downstream latency is usually a symptom unless no upstream cause exists.
-
-Prefer causes over symptoms.
+Prefer causes over symptoms. 
+Also note the following:
+Sudden onset increases the likelihood a metric is causal for spike-type incidents; sustained gradual buildup increases the likelihood a metric is causal for leak-type incidents. Judge based on the shape of the change, not just how early it started
 
 - Your job is to explain WHY the candidate is likely correct.
 - Only use facts present in the evidence.
@@ -85,7 +81,14 @@ Ranked root cause candidates:
 
 {candidates}
 
+Candidate comparison requirement:
 
+For the top two candidates, explicitly state:
+1. Why the top candidate could be correct.
+2. Why the second candidate could be correct.
+3. Which evidence favors one over the other.
+
+If the second candidate better explains the incident, override.
 Evidence gathered:
 
 {evidence}
@@ -107,6 +110,31 @@ Return ONLY valid JSON:
 }}
 """
 
+
+def classify_behavior(series, onset_frac):
+    """series: the metric's values over the incident window, in order.
+    onset_frac: your existing onset value (0=start, 1=end)."""
+    n = len(series)
+    early = series[:max(1, n // 3)]
+    late = series[-max(1, n // 3):]
+
+    early_mean = sum(early) / len(early)
+    late_mean = sum(late) / len(late)
+    overall_range = max(series) - min(series) or 1e-9
+
+    # how much of the total movement happened in the last third
+    late_share = abs(late_mean - early_mean) / overall_range
+
+    if onset_frac <= 0.2 and late_share < 0.3:
+        shape = "sudden early spike, then flat/recovering"
+    elif onset_frac >= 0.6:
+        shape = "gradual buildup, still rising near end of window"
+    elif late_share >= 0.5:
+        shape = "steadily increasing across the window"
+    else:
+        shape = "moderate deviation, no strong directional trend"
+
+    return shape
 
 def get_related_metrics(metric: str) -> set[str]:
     related = set(DEPENDENCY_PRIOR.get(metric, {}).get("can_cause", []))

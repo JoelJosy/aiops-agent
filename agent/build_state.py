@@ -41,13 +41,25 @@ def build_diagnosis_state(detector, baseline_df, incident_file_path) -> Diagnosi
     ranked_candidates = rank_root_causes(events, raw_window)
 
     top_candidate = ranked_candidates[0] if ranked_candidates else None
-    second_candidate = ranked_candidates[1] if len(ranked_candidates) > 1 else None
-    if top_candidate and second_candidate:
-        confidence_gap = top_candidate["confidence"] - second_candidate["confidence"]
-    elif top_candidate:
-        confidence_gap = 1.0
+    if top_candidate:
+        confidence_gap = (
+            top_candidate["confidence"] - ranked_candidates[1]["confidence"]
+            if len(ranked_candidates) > 1
+            else 1.0
+        )
     else:
         confidence_gap = 0.0
+
+    # candidates close enough to challenge the winner
+    comparison_candidates = []
+    if top_candidate:
+        top_conf = top_candidate["confidence"]
+
+        comparison_candidates = [
+            c for c in ranked_candidates
+            if top_conf - c["confidence"] <= 0.15
+        ]
+
 
     if events:
         start = min(e["onset"] for e in events)
@@ -72,8 +84,7 @@ def build_diagnosis_state(detector, baseline_df, incident_file_path) -> Diagnosi
         "ranked_candidates": make_json_serializable(ranked_candidates),
         "phase3_top_candidate": make_json_serializable(top_candidate["metric"] 
                                                        if top_candidate else None),
-        "phase3_second_candidate": make_json_serializable(second_candidate["metric"] 
-                                                          if second_candidate else None),
+        "phase3_candidate_comparison": make_json_serializable(comparison_candidates),
         "phase3_confidence_gap": make_json_serializable(confidence_gap),
         "evidence_gathered": [],
         "hypothesis": None,

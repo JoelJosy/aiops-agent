@@ -46,6 +46,6 @@ class DiagnosisState(TypedDict):
     remediation_result: Optional[dict]
 
     phase3_top_candidate: Optional[str]
-    phase3_second_candidate: Optional[str]
     phase3_confidence_gap: Optional[float]
+    phase3_candidate_comparison: Optional[list]
 
