@@ -4,7 +4,7 @@ import boto3
 from botocore.config import Config
 
 
-LLM_PROVIDER = "nova_pro"  # Options: "ollama", "nova_lite", "nova_pro"
+LLM_PROVIDER = "nova_pro"  # Options: "ollama", "nova_lite", "nova_pro", "llama3"
 
 bedrock = boto3.client(
     "bedrock-runtime",
@@ -17,7 +17,7 @@ bedrock = boto3.client(
 MODELS = {
 
     "nova_lite": "global.amazon.nova-2-lite-v1:0",
-
+    "llama3" : "meta.llama3-70b-instruct-v1:0",
     "nova_pro": "apac.amazon.nova-pro-v1:0",
 }
 
