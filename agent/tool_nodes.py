@@ -12,7 +12,11 @@ def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
     """Summarizes quantitative evidence from Prometheus API for each ranked candidate."""
 
     seen = set()
-    
+
+    # sort by onset time
+    onset_sorted = sorted(state["ranked_candidates"], key=lambda x: x["onset"])
+    earliest_metric = onset_sorted[0]["metric"]
+
     for candidate in state["ranked_candidates"]:
         if candidate["confidence"] < 0.3:
             continue
@@ -41,6 +45,11 @@ def summarize_metric_evidence(state: DiagnosisState) -> DiagnosisState:
             "behavior": behavior,
             "onset_rank": candidate["onset_rank"],
             "onset": str(candidate["onset"]),
+            "onset_order": (
+                "earliest detected deviation"
+                if candidate["metric"] == earliest_metric
+                else f"after {earliest_metric}"
+            ),
             "summary": {
                 "min": float(df["value"].min()),
                 "max": float(df["value"].max()),

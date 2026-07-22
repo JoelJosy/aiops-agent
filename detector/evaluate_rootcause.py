@@ -35,7 +35,7 @@ def main():
             continue  
 
         _, _, inc_results, raw_window_df = evaluate_incident(mad_detector, baseline_df, f_path)
-        events = extract_events(inc_results)
+        events = extract_events(inc_results, raw_window_df)
         ranked = rank_root_causes(events, raw_window_df) 
         predicted = ranked[0]["metric"] if ranked else None
 

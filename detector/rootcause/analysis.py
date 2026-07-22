@@ -16,7 +16,7 @@ FAULT_TO_ROOT_METRIC = {
 
 HARD_OUTAGE_METRICS = {"app_availability"}
 
-def extract_events(inc_results: pd.DataFrame) -> list[dict]:
+def extract_events(inc_results: pd.DataFrame, full_window_df: pd.DataFrame) -> list[dict]:
     """Extracts a list of all metrics that triggered anomalies, along with their onset, offset, and peak score."""
     events = []
     for col in inc_results.columns:
@@ -25,9 +25,18 @@ def extract_events(inc_results: pd.DataFrame) -> list[dict]:
             flagged = inc_results[inc_results[col] == 1]
             if not flagged.empty:
                 score_col = f"{metric}_score"
+
+                if metric in DRIFT_METRICS and full_window_df is not None:
+                    onset_frac = detect_growth_onset(full_window_df[metric])
+                    n = len(full_window_df)
+                    onset_idx = min(int(onset_frac * n), n - 1)
+                    onset_time = full_window_df.index[onset_idx]
+                else:
+                    onset_time = flagged.index.min()
+
                 events.append({
                     "metric": metric,
-                    "onset": flagged.index.min(),
+                    "onset": onset_time,
                     "offset": flagged.index.max(),
                     "peak_score": inc_results.loc[flagged.index, score_col].max() if score_col in inc_results else None,
                 })
@@ -115,3 +124,30 @@ def rank_root_causes(events: list[dict], full_window_df: pd.DataFrame) -> list[d
         })
 
     return sorted(candidates, key=lambda c: -c["confidence"])
+
+
+def detect_growth_onset(series):
+    """
+    Detect abnormal change in growth rate.
+    Used for metrics like memory where normal drift exists.
+    """
+
+    values = series.values
+
+    if len(values) < 5:
+        return 1.0
+
+    velocity = np.diff(values)
+
+    acceleration = np.diff(velocity)
+
+    median = np.median(acceleration)
+    mad = np.median(np.abs(acceleration - median))
+
+    threshold = median + 3 * mad
+
+    for i, change in enumerate(acceleration):
+        if abs(change) > threshold:
+            return (i + 2) / len(values)
+
+    return 1.0

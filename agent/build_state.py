@@ -37,7 +37,7 @@ def build_diagnosis_state(detector, baseline_df, incident_file_path) -> Diagnosi
     """Builds the diagnosis state from the incident data and detector configuration."""
 
     _, _, incident_results, raw_window = evaluate_incident(detector, baseline_df, incident_file_path)
-    events = extract_events(incident_results)
+    events = extract_events(incident_results, raw_window)
     ranked_candidates = rank_root_causes(events, raw_window)
 
     top_candidate = ranked_candidates[0] if ranked_candidates else None
@@ -90,7 +90,7 @@ def build_diagnosis_state(detector, baseline_df, incident_file_path) -> Diagnosi
         "hypothesis": None,
         "confidence": 0.0,
         "iterations": 0,
-        "remediation_action": None,
+        "remediation_action": "none",
         "requires_approval": False,
         "approval_status": None,
         "remediation_result": None,
