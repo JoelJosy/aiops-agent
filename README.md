@@ -31,6 +31,8 @@ The system is deliberately layered so the hard quantitative work (detection and 
 **Live remediation** — a non-dry-run pass of the full pipeline against live infrastructure: fault injection → detection → diagnosis → human approval prompt → actual `docker compose restart` executed and confirmed.
 
 
+https://github.com/user-attachments/assets/4cfea308-10b8-42ea-9e40-c5ee535436eb
+
 
 ## Architecture
 
