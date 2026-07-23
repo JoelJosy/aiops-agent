@@ -55,7 +55,7 @@ def diagnose(state: DiagnosisState) -> DiagnosisState:
     state["reasoning"] = result.get("reasoning", "")
     state["iterations"] += 1
 
-    print("Escalation decision:", state["needs_more_evidence"], "confidence:", state["confidence"])
+    # print("Escalation decision:", state["needs_more_evidence"], "confidence:", state["confidence"])
 
     return state
 

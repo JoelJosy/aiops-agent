@@ -14,7 +14,7 @@ HIGH_RISK_ACTIONS = {
 }
 
 SERVICE_NAME = "aiops-app"
-DRY_RUN = True
+DRY_RUN = False
 
 
 def finalize_diagnosis(state: DiagnosisState) -> DiagnosisState:

@@ -48,7 +48,7 @@ for path in incident_files:
     print("\nRunning:", path)
 
     state = build_diagnosis_state(mad_detector, baseline_df, path)
-    print("Build state top:", state["phase3_top_candidate"])
+    # print("Build state top:", state["phase3_top_candidate"])
 
     config = {
         "configurable":{
@@ -64,14 +64,14 @@ for path in incident_files:
         print(f"Skipping {fault_type}: no ground truth")
         continue
 
-    print("\nFINAL DIAGNOSIS:")
-    print("Expected:", expected)
-    print("Phase3:", state["phase3_top_candidate"])
-    print("LLM:", result["diagnosed_root_cause"])
+    # print("\nFINAL DIAGNOSIS:")
+    # print("Expected:", expected)
+    # print("Phase3:", state["phase3_top_candidate"])
+    # print("LLM:", result["diagnosed_root_cause"])
 
-    print("\nEvidence:")
-    for e in result["evidence_gathered"]:
-        print(e)
+    # print("\nEvidence:")
+    # for e in result["evidence_gathered"]:
+        # print(e)
 
     rows.append({
         "file": os.path.basename(path),

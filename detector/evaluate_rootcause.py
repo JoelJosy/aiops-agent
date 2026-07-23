@@ -51,7 +51,7 @@ def main():
     df = pd.DataFrame(rows)
     print(df.to_string(index=False))
     acc = df["correct"].mean() * 100
-    print(f"\nRoot-cause accuracy: {df['correct'].sum()}/{len(df)} = {acc:.1f}%")
+    # print(f"\nRoot-cause accuracy: {df['correct'].sum()}/{len(df)} = {acc:.1f}%")
 
 if __name__ == "__main__":
     main()
