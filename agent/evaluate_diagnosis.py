@@ -64,10 +64,10 @@ for path in incident_files:
         print(f"Skipping {fault_type}: no ground truth")
         continue
 
-    # print("\nFINAL DIAGNOSIS:")
-    # print("Expected:", expected)
-    # print("Phase3:", state["phase3_top_candidate"])
-    # print("LLM:", result["diagnosed_root_cause"])
+    print("\nFINAL DIAGNOSIS:")
+    print("Expected:", expected)
+    print("Phase3:", state["phase3_top_candidate"])
+    print("LLM:", result["diagnosed_root_cause"])
 
     # print("\nEvidence:")
     # for e in result["evidence_gathered"]:

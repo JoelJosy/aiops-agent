@@ -109,7 +109,8 @@ def rank_root_causes(events: list[dict], full_window_df: pd.DataFrame) -> list[d
 
         confidence = 0.5 * prior_score + 0.35 * corr_score + 0.15 * onset_rank
 
-        # print(f"  [{metric}] prior={prior_score:.2f} corr={corr_score:.2f} onset={onset_rank:.2f} -> conf={confidence:.3f}")
+        print("Root cause candidate:", metric)
+        print(f"  prior={prior_score:.2f} corr={corr_score:.2f} onset={onset_rank:.2f} -> conf={confidence:.3f}")
 
         candidates.append({
             "metric": metric,
